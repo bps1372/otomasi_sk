@@ -1,0 +1,1 @@
+# otomasi_sk
