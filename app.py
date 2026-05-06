@@ -32,10 +32,10 @@ with col2:
 # 2. Input Data Tabel (Dinamis)
 st.subheader("F. Lampiran")
 default_data = pd.DataFrame({
-    "Nama/Jabatan": ["Alber Analafean"],
-    "NIP/Golongan": ["199801012025011001 / III/a"],
-    "Posisi": ["Ketua Tim"],
-    "Honor": ["500.000"]
+    "Nama/Jabatan": ["si ABCD"],
+    "NIP/Golongan": ["Mitra Statistik"],
+    "Posisi": ["PML"],
+    "Honor": ["5.000.000"]
 })
 edited_df = st.data_editor(default_data, num_rows="dynamic", use_container_width=True)
 
