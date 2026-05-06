@@ -184,7 +184,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
 
 # 4. Menampilkan Tombol Unduh
 if st.session_state.doc_ready:
-    st.success("✅ Dokumen berhasil diproses dengan spasi tunggal antar baris!")
+    st.success("✅ Dokumen berhasil diproses")
     st.download_button(
         label="⬇️ Unduh Dokumen Hasil",
         data=st.session_state.doc_data,
