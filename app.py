@@ -11,7 +11,7 @@ import traceback
 st.set_page_config(page_title="AutoSura1372", layout="centered")
 
 st.title("📝 Auto-Sura (Automatis Surat)")
-st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok. Template diambil langsung dari GitHub.")
+st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok.")
 
 # --- KONFIGURASI GITHUB ---
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/bps1372/otomasi_sk/main/TemplateDokumen.docx"
