@@ -9,44 +9,6 @@ import requests
 import traceback
 
 
-import streamlit as st
-import requests
-import base64
-
-def display_pdf(url):
-    # Mengubah link GitHub biasa ke link RAW agar file bisa diunduh/dibaca
-    raw_url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
-    
-    try:
-        # Mengambil konten file PDF
-        response = requests.get(raw_url)
-        response.raise_for_status() # Cek jika download berhasil
-        
-        # Encode file ke base64
-        base64_pdf = base64.b64encode(response.content).decode('utf-8')
-        
-        # Embed PDF menggunakan iframe HTML
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-        
-        st.markdown(pdf_display, unsafe_allow_html=True)
-        
-    except Exception as e:
-        st.error(f"Gagal memuat PDF: {e}")
-
-# Judul Aplikasi
-st.set_page_config(page_title="PDF Viewer", layout="wide")
-st.title("Pratinjau Templat PDF")
-
-# URL yang Anda berikan
-github_link = "https://github.com/bps1372/otomasi_sk/blob/main/TEMPLAT.pdf"
-
-# Tombol untuk memuat
-if st.button("Buka Dokumen"):
-    display_pdf(github_link)
-
-
-
-
 st.set_page_config(page_title="Generator SK BPS", layout="centered")
 
 st.title("📝 Auto-Sura (Automatis Surat)")
