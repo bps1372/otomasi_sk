@@ -10,8 +10,8 @@ import traceback
 
 st.set_page_config(page_title="Generator SK BPS", layout="centered")
 
-st.title("📝 Generator Dokumen SK BPS Kota Solok")
-st.write("Aplikasi ini akan mengotomasi pengisian dokumen. Template diambil langsung dari GitHub.")
+st.title("📝 Auto-Sura (Automatis Surat)")
+st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anngaran. Template diambil langsung dari GitHub.")
 
 # --- KONFIGURASI GITHUB ---
 # Pastikan link ini mengarah ke file DOK.docx versi terbaru Anda
