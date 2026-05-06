@@ -57,6 +57,10 @@ def set_cell_text_with_font(cell, text):
     """Memasukkan teks ke sel tabel sambil mempertahankan font Bookman"""
     cell.text = text
     for p in cell.paragraphs:
+        # Reset spacing agar tidak ada jarak tambahan di dalam sel data
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
+        p.paragraph_format.line_spacing = 1.0
         for run in p.runs:
             apply_bookman_font(run, size=11)
 
@@ -64,17 +68,14 @@ def set_bottom_border(cell):
     """Menerapkan garis ganda hitam (double border) di bagian bawah sebuah sel"""
     tc = cell._tc
     tcPr = tc.get_or_add_tcPr()
-    
     tcBorders = tcPr.find(qn('w:tcBorders'))
     if tcBorders is None:
         tcBorders = OxmlElement('w:tcBorders')
         tcPr.append(tcBorders)
-        
     bottom = tcBorders.find(qn('w:bottom'))
     if bottom is None:
         bottom = OxmlElement('w:bottom')
         tcBorders.append(bottom)
-        
     bottom.set(qn('w:val'), 'double')
     bottom.set(qn('w:sz'), '12')
     bottom.set(qn('w:space'), '0')
@@ -85,9 +86,8 @@ if st.button("Proses & Buat Dokumen", type="primary"):
     with st.spinner('Mengunduh template dari GitHub dan memproses dokumen...'):
         try:
             response = requests.get(GITHUB_RAW_URL)
-            
             if response.status_code != 200:
-                st.error(f"Gagal mengunduh template (Status: {response.status_code}). Pastikan link Raw GitHub benar.")
+                st.error(f"Gagal mengunduh template (Status: {response.status_code}).")
                 st.session_state.doc_ready = False
             else:
                 template_file = io.BytesIO(response.content)
@@ -110,28 +110,25 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             if key in original_text:
                                 original_text = original_text.replace(key, value)
                                 changed = True
-                        
                         if changed:
                             p.text = original_text
                             for run in p.runs:
                                 apply_bookman_font(run, size=12)
 
                 replace_text_in_paragraphs(doc.paragraphs)
-                
                 for table in doc.tables:
                     for row in table.rows:
                         for cell in row.cells:
                             if "{nama}" not in cell.text.lower():
                                 replace_text_in_paragraphs(cell.paragraphs)
 
-                # Logik Tabel Lampiran
+                # --- Logik Tabel Lampiran ---
                 target_table = None
                 template_row_idx = -1
-                
                 for table in doc.tables:
                     for i, row in enumerate(table.rows):
                         for cell in row.cells:
-                            if "{nama}" in cell.text.lower() or "{nama}" in cell.text:
+                            if "{nama}" in cell.text.lower():
                                 target_table = table
                                 template_row_idx = i
                                 break
@@ -141,45 +138,53 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                 if target_table and template_row_idx != -1:
                     for index, row_data in edited_df.iterrows():
                         if index == 0:
-                            # Jika orang pertama, gunakan baris asli template
                             target_row = target_table.rows[template_row_idx]
                         else:
-                            # TAMBAH 1 BARIS KOSONG sebagai spasi antar data
-                            target_table.add_row()
-                            # Tambah baris baru untuk data orang berikutnya
+                            # 1. Tambah baris kosong (Spasi antar data)
+                            spacer = target_table.add_row()
+                            for cell in spacer.cells:
+                                p = cell.paragraphs[0]
+                                p.paragraph_format.space_before = Pt(0)
+                                p.paragraph_format.space_after = Pt(0)
+                                p.paragraph_format.line_spacing = 1.0
+                                # Masukkan run kosong agar tinggi baris minimal
+                                run = p.add_run("")
+                                apply_bookman_font(run, size=11)
+                            
+                            # 2. Tambah baris untuk data
                             target_row = target_table.add_row()
                         
-                        # Isi data ke baris
                         set_cell_text_with_font(target_row.cells[0], f"{index + 1}.")
                         set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]))
                         set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]))
                         set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
                     
-                    # TAMBAH 1 BARIS KOSONG TERAKHIR SEBAGAI SPASI SEBELUM GARIS GANDA
+                    # Baris spasi terakhir sebelum garis ganda
                     final_spacer = target_table.add_row()
                     for cell in final_spacer.cells:
+                        p = cell.paragraphs[0]
+                        p.paragraph_format.space_before = Pt(0)
+                        p.paragraph_format.space_after = Pt(0)
+                        p.paragraph_format.line_spacing = 1.0
                         set_bottom_border(cell)
-                            
                 else:
-                    st.warning("⚠️ Peringatan: Teks {nama} tidak ditemukan di dalam tabel Word.")
+                    st.warning("⚠️ Peringatan: Teks {nama} tidak ditemukan.")
 
                 doc_io = io.BytesIO()
                 doc.save(doc_io)
                 doc_io.seek(0)
-                
                 st.session_state.doc_data = doc_io.getvalue()
                 st.session_state.doc_name = f"SK_{tentang.replace(' ', '_')}.docx"
                 st.session_state.doc_ready = True
                 
         except Exception as e:
             st.error(f"Terjadi kesalahan teknis: {e}")
-            st.error(traceback.format_exc())
             st.session_state.doc_ready = False
 
 # 4. Menampilkan Tombol Unduh
 if st.session_state.doc_ready:
-    st.success("✅ Dokumen berhasil diproses dengan spasi antar baris!")
+    st.success("✅ Dokumen berhasil diproses dengan spasi tunggal antar baris!")
     st.download_button(
         label="⬇️ Unduh Dokumen Hasil",
         data=st.session_state.doc_data,
