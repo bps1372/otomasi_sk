@@ -8,7 +8,7 @@ import io
 import requests
 import traceback
 
-st.set_page_config(page_title="Generator SK BPS", layout="centered")
+st.set_page_config(page_title="AutoSura1372", layout="centered")
 
 st.title("📝 Auto-Sura (Automatis Surat)")
 st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok. Template diambil langsung dari GitHub.")
