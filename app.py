@@ -13,14 +13,6 @@ st.set_page_config(page_title="Generator SK BPS", layout="centered")
 st.title("📝 Auto-Sura (Automatis Surat)")
 st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran. Template diambil langsung dari GitHub.")
 
-with col_link:
-    # Menampilkan link download langsung untuk file TEMPLAT.pdf
-    pdf_url = "https://github.com/bps1372/otomasi_sk/raw/main/TEMPLAT.pdf"
-    st.link_button("📂 Buka/Unduh Template PDF", pdf_url, use_container_width=True)
-    st.caption("Lihat template untuk memastikan posisi teks.")
-
-st.markdown("---")
-
 # --- KONFIGURASI GITHUB ---
 # Pastikan link ini mengarah ke file DOK.docx versi terbaru Anda
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/bps1372/otomasi_sk/main/TemplateDokumen.docx"
