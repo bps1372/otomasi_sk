@@ -17,7 +17,7 @@ st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Angg
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/bps1372/otomasi_sk/main/TemplateDokumen.docx"
 
 # 1. Input Data Umum
-st.subheader("1. Informasi Umum Dokumen")
+st.subheader("Informasi Umum Dokumen")
 col1, col2 = st.columns(2)
 
 with col1:
