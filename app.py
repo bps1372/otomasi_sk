@@ -119,7 +119,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         if changed:
                             p.text = original_text
                             for run in p.runs:
-                                apply_bookman_font(run, size=11)
+                                apply_bookman_font(run, size=12)
 
                 replace_text_in_paragraphs(doc.paragraphs)
                 
