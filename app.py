@@ -35,7 +35,7 @@ default_data = pd.DataFrame({
     "Nama/Jabatan": ["si ABCD"],
     "NIP/Golongan": ["199102192019031001 Gol: III/b"],
     "Posisi": ["PML"],
-    "Honor per Dok": ["50.000"]
+    "Honor": ["50.000"]
 })
 edited_df = st.data_editor(default_data, num_rows="dynamic", use_container_width=True)
 
