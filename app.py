@@ -127,16 +127,15 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             # Data pertama menimpa baris template {nama}
                             target_row = target_table.rows[template_row_idx]
                         else:
-                            # 1. BUAT BARIS KOSONG (SPACER) SEBAGAI JARAK 1 SPASI
+                            # 1. BUAT BARIS KOSONG (SPACER) SEBAGAI JARAK ANTAR DATA (1 Spasi)
                             spacer_row = target_table.add_row()
                             for cell in spacer_row.cells:
                                 p = cell.paragraphs[0]
                                 p.paragraph_format.space_before = Pt(0)
                                 p.paragraph_format.space_after = Pt(0)
-                                p.paragraph_format.line_spacing = 1.5
-                                # Masukkan font kosong agar baris ini punya tinggi setara huruf (1 spasi)
+                                p.paragraph_format.line_spacing = 1.0 
                                 run = p.add_run("")
-                                apply_bookman_font(run, size=12)
+                                apply_bookman_font(run, size=11)
                             
                             # Sisipkan baris kosong tepat di bawah baris terakhir
                             current_tr.addnext(spacer_row._tr)
@@ -157,6 +156,21 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]))
                         set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
+
+                    # 3. TAMBAHKAN JARAK KHUSUS (1.5 SPASI) SETELAH SEMUA DATA SELESAI
+                    # Ini akan memberi jarak antara data paling terakhir dengan garis ganda penutup
+                    final_spacer_row = target_table.add_row()
+                    for cell in final_spacer_row.cells:
+                        p = cell.paragraphs[0]
+                        p.paragraph_format.space_before = Pt(0)
+                        p.paragraph_format.space_after = Pt(0)
+                        p.paragraph_format.line_spacing = 1.5 # Jarak 1.5 khusus bagian paling bawah
+                        run = p.add_run("")
+                        apply_bookman_font(run, size=11)
+                    
+                    # Sisipkan tepat setelah data terakhir
+                    current_tr.addnext(final_spacer_row._tr)
+
                 else:
                     st.warning("⚠️ Peringatan: Teks {nama} tidak ditemukan dalam tabel.")
 
