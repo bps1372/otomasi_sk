@@ -33,7 +33,7 @@ with col2:
 st.subheader("F. Lampiran")
 default_data = pd.DataFrame({
     "Nama/Jabatan": ["si ABCD"],
-    "NIP/Golongan": ["Mitra Statistik"],
+    "NIP/Golongan": ["199102192019031001 Gol: III/b"],
     "Posisi": ["PML"],
     "Honor": ["50.000"]
 })
