@@ -65,7 +65,7 @@ def set_cell_text_with_font(cell, text):
             apply_bookman_font(run, size=11)
 
 def set_bottom_border(cell):
-    """Menerapkan garis ganda hitam (double border) di bagian bawah sebuah sel"""
+    """Menerapkan garis ganda (tipis atas, tebal bawah) di bagian bawah sebuah sel"""
     tc = cell._tc
     tcPr = tc.get_or_add_tcPr()
     tcBorders = tcPr.find(qn('w:tcBorders'))
@@ -76,8 +76,12 @@ def set_bottom_border(cell):
     if bottom is None:
         bottom = OxmlElement('w:bottom')
         tcBorders.append(bottom)
-    bottom.set(qn('w:val'), 'double')
-    bottom.set(qn('w:sz'), '12')
+        
+    # --- UPDATE DI SINI ---
+    bottom.set(qn('w:val'), 'thinThickSmallGap') # Mengubah tipe garis
+    bottom.set(qn('w:sz'), '18') # Ukuran diperbesar sedikit agar tebalnya lebih terlihat (18 = 2.25 pt)
+    # ----------------------
+    
     bottom.set(qn('w:space'), '0')
     bottom.set(qn('w:color'), '000000')
 
