@@ -64,26 +64,8 @@ def set_cell_text_with_font(cell, text):
         for run in p.runs:
             apply_bookman_font(run, size=11)
 
-def set_top_border(cell):
-    """Menerapkan garis ganda hitam (tipis atas, tebal bawah) di bagian atas sebuah sel"""
-    tc = cell._tc
-    tcPr = tc.get_or_add_tcPr()
-    tcBorders = tcPr.find(qn('w:tcBorders'))
-    if tcBorders is None:
-        tcBorders = OxmlElement('w:tcBorders')
-        tcPr.append(tcBorders)
-    top = tcBorders.find(qn('w:top'))
-    if top is None:
-        top = OxmlElement('w:top')
-        tcBorders.append(top)
-    
-    top.set(qn('w:val'), 'thinThickSmallGap')
-    top.set(qn('w:sz'), '18')
-    top.set(qn('w:space'), '0')
-    top.set(qn('w:color'), '000000')
-
 def set_bottom_border(cell):
-    """Menerapkan garis ganda hitam (tipis atas, tebal bawah) di bagian bawah sebuah sel"""
+    """Menerapkan garis ganda hitam (double border) di bagian bawah sebuah sel"""
     tc = cell._tc
     tcPr = tc.get_or_add_tcPr()
     tcBorders = tcPr.find(qn('w:tcBorders'))
@@ -94,9 +76,8 @@ def set_bottom_border(cell):
     if bottom is None:
         bottom = OxmlElement('w:bottom')
         tcBorders.append(bottom)
-    
-    bottom.set(qn('w:val'), 'thinThickSmallGap') 
-    bottom.set(qn('w:sz'), '18') 
+    bottom.set(qn('w:val'), 'double')
+    bottom.set(qn('w:sz'), '12')
     bottom.set(qn('w:space'), '0')
     bottom.set(qn('w:color'), '000000')
 
@@ -158,12 +139,6 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                     if target_table: break
                 
                 if target_table and template_row_idx != -1:
-                    
-                    # ---> TAMBAHAN BARU: Memaksa garis atas tabel menjadi tipis-tebal
-                    for cell in target_table.rows[0].cells:
-                        set_top_border(cell)
-                    # <---
-                    
                     for index, row_data in edited_df.iterrows():
                         if index == 0:
                             target_row = target_table.rows[template_row_idx]
@@ -188,7 +163,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
                     
-                    # Baris spasi terakhir sebelum garis ganda (bawah)
+                    # Baris spasi terakhir sebelum garis ganda
                     final_spacer = target_table.add_row()
                     for cell in final_spacer.cells:
                         p = cell.paragraphs[0]
