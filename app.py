@@ -2,11 +2,9 @@ import streamlit as st
 import pandas as pd
 from docx import Document
 from docx.shared import Pt
-from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import io
 import requests
-import traceback
 
 st.set_page_config(page_title="AutoSura1372", layout="centered")
 
@@ -46,13 +44,15 @@ if "doc_data" not in st.session_state:
 if "doc_name" not in st.session_state:
     st.session_state.doc_name = ""
 
-# --- FUNGSI CUSTOM FONT & BORDER ---
+# --- FUNGSI CUSTOM FONT ---
 def apply_bookman_font(run, size=11):
+    """Menerapkan font Bookman Old Style ke dalam elemen Word"""
     run.font.name = 'Bookman Old Style'
     run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Bookman Old Style')
     run.font.size = Pt(size)
 
 def set_cell_text_with_font(cell, text):
+    """Memasukkan teks ke sel tabel sambil mempertahankan font Bookman"""
     cell.text = text
     for p in cell.paragraphs:
         p.paragraph_format.space_before = Pt(0)
@@ -61,51 +61,10 @@ def set_cell_text_with_font(cell, text):
         for run in p.runs:
             apply_bookman_font(run, size=11)
 
-def set_bottom_border(cell):
-    tc = cell._tc
-    tcPr = tc.get_or_add_tcPr()
-    tcBorders = tcPr.find(qn('w:tcBorders'))
-    if tcBorders is None:
-        tcBorders = OxmlElement('w:tcBorders')
-        tcPr.append(tcBorders)
-    bottom = tcBorders.find(qn('w:bottom'))
-    if bottom is None:
-        bottom = OxmlElement('w:bottom')
-        tcBorders.append(bottom)
-    bottom.set(qn('w:val'), 'double')
-    bottom.set(qn('w:sz'), '12')
-    bottom.set(qn('w:space'), '0')
-    bottom.set(qn('w:color'), '000000')
-
-def clear_middle_borders(cell, clear_top=False):
-    """Meniadakan garis atas dan bawah agar tidak ada garis di tengah-tengah nomor"""
-    tc = cell._tc
-    tcPr = tc.get_or_add_tcPr()
-    tcBorders = tcPr.find(qn('w:tcBorders'))
-    if tcBorders is None:
-        tcBorders = OxmlElement('w:tcBorders')
-        tcPr.append(tcBorders)
-    
-    # Selalu paksa garis bawah hilang di tengah data
-    bottom = tcBorders.find(qn('w:bottom'))
-    if bottom is None:
-        bottom = OxmlElement('w:bottom')
-        tcBorders.append(bottom)
-    bottom.set(qn('w:val'), 'nil')
-    
-    # Untuk baris baru (index > 0), paksa garis atas juga hilang 
-    # agar tidak mewarisi garis dari baris sebelumnya
-    if clear_top:
-        top = tcBorders.find(qn('w:top'))
-        if top is None:
-            top = OxmlElement('w:top')
-            tcBorders.append(top)
-        top.set(qn('w:val'), 'nil')
-
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
     
-    st.info("sedang diproses....")
+    st.info("Sedang diproses....")
     
     with st.spinner('Mengunduh template dari GitHub dan memproses dokumen...'):
         try:
@@ -120,7 +79,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                 replacements = {
                     "{tentang}": tentang,
                     "{pelaksanaan}": pelaksanaan,
-                    "{pelaksanan}": pelaksanaan,
+                    "{pelaksanan}": pelaksanaan, # Typo handling
                     "{petugas}": petugas,
                     "{tanggal}": tanggal,
                     "{nomor}": nomor
@@ -162,46 +121,27 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                 if target_table and template_row_idx != -1:
                     for index, row_data in edited_df.iterrows():
                         if index == 0:
+                            # Data pertama menimpa baris template {nama}
                             target_row = target_table.rows[template_row_idx]
-                            # Hapus HANYA garis bawah pada baris pertama (jangan hapus atasnya agar garis header tidak hilang)
-                            for cell in target_row.cells:
-                                clear_middle_borders(cell, clear_top=False)
                         else:
-                            # 1. Tambah baris kosong (Spasi antar data) tanpa garis sama sekali
-                            spacer = target_table.add_row()
-                            for cell in spacer.cells:
-                                clear_middle_borders(cell, clear_top=True)
-                                p = cell.paragraphs[0]
-                                p.paragraph_format.space_before = Pt(0)
-                                p.paragraph_format.space_after = Pt(0)
-                                p.paragraph_format.line_spacing = 1.0
-                                run = p.add_run("")
-                                apply_bookman_font(run, size=11)
+                            # Buat baris baru
+                            new_row = target_table.add_row()
                             
-                            # 2. Tambah baris untuk data tanpa garis sama sekali
-                            target_row = target_table.add_row()
-                            for cell in target_row.cells:
-                                clear_middle_borders(cell, clear_top=True)
+                            # KUNCI PERBAIKAN: Pindahkan baris baru ini agar berada tepat di BAWAH data sebelumnya
+                            # Ini mencegah baris baru masuk di bawah garis penutup template
+                            prev_row = target_table.rows[template_row_idx + index - 1]
+                            prev_row._tr.addnext(new_row._tr)
+                            
+                            target_row = new_row
                         
+                        # Isi data ke dalam baris
                         set_cell_text_with_font(target_row.cells[0], f"{index + 1}.")
                         set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]))
                         set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]))
                         set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
-                    
-                    # 3. Baris spasi terakhir SEBAGAI PENUTUP TABEL
-                    final_spacer = target_table.add_row()
-                    for cell in final_spacer.cells:
-                        # Hapus warisan garis atas dulu agar tidak dobel
-                        clear_middle_borders(cell, clear_top=True) 
-                        p = cell.paragraphs[0]
-                        p.paragraph_format.space_before = Pt(0)
-                        p.paragraph_format.space_after = Pt(0)
-                        p.paragraph_format.line_spacing = 1.0
-                        # Terapkan garis ganda penutup di paling bawah tabel
-                        set_bottom_border(cell)
                 else:
-                    st.warning("⚠️ Peringatan: Teks {nama} tidak ditemukan.")
+                    st.warning("⚠️ Peringatan: Teks {nama} tidak ditemukan dalam tabel.")
 
                 doc_io = io.BytesIO()
                 doc.save(doc_io)
