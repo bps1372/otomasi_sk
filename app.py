@@ -57,7 +57,6 @@ def set_cell_text_with_font(cell, text):
     """Memasukkan teks ke sel tabel sambil mempertahankan font Bookman"""
     cell.text = text
     for p in cell.paragraphs:
-        # Reset spacing agar tidak ada jarak tambahan di dalam sel data
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(0)
         p.paragraph_format.line_spacing = 1.0
@@ -80,6 +79,20 @@ def set_bottom_border(cell):
     bottom.set(qn('w:sz'), '12')
     bottom.set(qn('w:space'), '0')
     bottom.set(qn('w:color'), '000000')
+
+def remove_bottom_border(cell):
+    """MENGHAPUS garis bawah pada sel agar tidak muncul garis di tengah-tengah tabel"""
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    tcBorders = tcPr.find(qn('w:tcBorders'))
+    if tcBorders is None:
+        tcBorders = OxmlElement('w:tcBorders')
+        tcPr.append(tcBorders)
+    bottom = tcBorders.find(qn('w:bottom'))
+    if bottom is None:
+        bottom = OxmlElement('w:bottom')
+        tcBorders.append(bottom)
+    bottom.set(qn('w:val'), 'nil') # 'nil' secara eksplisit meniadakan garis
 
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
@@ -125,7 +138,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             if "{nama}" not in cell.text.lower():
                                 replace_text_in_paragraphs(cell.paragraphs)
 
-                # --- Logik Tabel Lampiran ---
+                # --- Logika Tabel Lampiran ---
                 target_table = None
                 template_row_idx = -1
                 for table in doc.tables:
@@ -142,20 +155,25 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                     for index, row_data in edited_df.iterrows():
                         if index == 0:
                             target_row = target_table.rows[template_row_idx]
+                            # Hapus garis bawah bawaan template di baris pertama
+                            for cell in target_row.cells:
+                                remove_bottom_border(cell)
                         else:
-                            # 1. Tambah baris kosong (Spasi antar data)
+                            # 1. Tambah baris kosong (Spasi antar data) tanpa garis
                             spacer = target_table.add_row()
                             for cell in spacer.cells:
+                                remove_bottom_border(cell)
                                 p = cell.paragraphs[0]
                                 p.paragraph_format.space_before = Pt(0)
                                 p.paragraph_format.space_after = Pt(0)
                                 p.paragraph_format.line_spacing = 1.0
-                                # Masukkan run kosong agar tinggi baris minimal
                                 run = p.add_run("")
                                 apply_bookman_font(run, size=11)
                             
-                            # 2. Tambah baris untuk data
+                            # 2. Tambah baris untuk data tanpa garis
                             target_row = target_table.add_row()
+                            for cell in target_row.cells:
+                                remove_bottom_border(cell)
                         
                         set_cell_text_with_font(target_row.cells[0], f"{index + 1}.")
                         set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]))
@@ -163,7 +181,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
                     
-                    # Baris spasi terakhir sebelum garis ganda
+                    # Baris spasi terakhir sebagai penutup tabel DENGAN garis ganda
                     final_spacer = target_table.add_row()
                     for cell in final_spacer.cells:
                         p = cell.paragraphs[0]
