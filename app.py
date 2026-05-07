@@ -57,9 +57,9 @@ def set_cell_text_with_font(cell, text):
     for p in cell.paragraphs:
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(0)
-        p.paragraph_format.line_spacing = 1.0
+        p.paragraph_format.line_spacing = 2
         for run in p.runs:
-            apply_bookman_font(run, size=11)
+            apply_bookman_font(run, size=12)
 
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
@@ -166,7 +166,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         p.paragraph_format.space_after = Pt(0)
                         p.paragraph_format.line_spacing = 1.5 # Jarak 1.5 khusus bagian paling bawah
                         run = p.add_run("")
-                        apply_bookman_font(run, size=11)
+                        apply_bookman_font(run, size=12)
                     
                     # Sisipkan tepat setelah data terakhir
                     current_tr.addnext(final_spacer_row._tr)
