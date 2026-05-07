@@ -170,7 +170,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         p = cell.paragraphs[0]
                         p.paragraph_format.space_before = Pt(0)
                         p.paragraph_format.space_after = Pt(0)
-                        p.paragraph_format.line_spacing = 1.0
+                        p.paragraph_format.line_spacing = 1.5
                         set_bottom_border(cell)
                 else:
                     st.warning("⚠️ Peringatan: Teks {nama} tidak ditemukan.")
