@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from docx import Document
 from docx.shared import Pt
+from docx.oxml import OxmlElement # Pastikan ini di-import
 from docx.oxml.ns import qn
 import io
 import requests
@@ -44,7 +45,7 @@ if "doc_data" not in st.session_state:
 if "doc_name" not in st.session_state:
     st.session_state.doc_name = ""
 
-# --- FUNGSI CUSTOM FONT ---
+# --- FUNGSI CUSTOM FONT & XML ---
 def apply_bookman_font(run, size=11):
     """Menerapkan font Bookman Old Style ke dalam elemen Word"""
     run.font.name = 'Bookman Old Style'
@@ -60,6 +61,14 @@ def set_cell_text_with_font(cell, text):
         p.paragraph_format.line_spacing = 1.5
         for run in p.runs:
             apply_bookman_font(run, size=12)
+
+def set_repeat_table_header(row):
+    """Fungsi untuk membuat baris (header) berulang otomatis di halaman baru"""
+    tr = row._tr
+    trPr = tr.get_or_add_trPr()
+    tblHeader = OxmlElement('w:tblHeader')
+    tblHeader.set(qn('w:val'), "true")
+    trPr.append(tblHeader)
 
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
@@ -119,6 +128,12 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                     if target_table: break
                 
                 if target_table and template_row_idx != -1:
+                    
+                    # ---> TAMBAHAN BARU: Set baris header agar berulang di halaman baru <---
+                    # Kita loop baris dari paling atas (0) sampai sebelum baris data (template_row_idx)
+                    for i in range(template_row_idx):
+                        set_repeat_table_header(target_table.rows[i])
+
                     # Ambil elemen XML dari baris template sebagai titik awal
                     current_tr = target_table.rows[template_row_idx]._tr
                     
@@ -158,13 +173,12 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
 
                     # 3. TAMBAHKAN JARAK KHUSUS (1.5 SPASI) SETELAH SEMUA DATA SELESAI
-                    # Ini akan memberi jarak antara data paling terakhir dengan garis ganda penutup
                     final_spacer_row = target_table.add_row()
                     for cell in final_spacer_row.cells:
                         p = cell.paragraphs[0]
                         p.paragraph_format.space_before = Pt(0)
                         p.paragraph_format.space_after = Pt(0)
-                        p.paragraph_format.line_spacing = 1 # Jarak 1.5 khusus bagian paling bawah
+                        p.paragraph_format.line_spacing = 1 # Jarak khusus bagian paling bawah
                         run = p.add_run("")
                         apply_bookman_font(run, size=12)
                     
