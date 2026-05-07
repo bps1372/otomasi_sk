@@ -119,18 +119,35 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                     if target_table: break
                 
                 if target_table and template_row_idx != -1:
+                    # Ambil elemen XML dari baris template sebagai titik awal
+                    current_tr = target_table.rows[template_row_idx]._tr
+                    
                     for index, row_data in edited_df.iterrows():
                         if index == 0:
                             # Data pertama menimpa baris template {nama}
                             target_row = target_table.rows[template_row_idx]
                         else:
-                            # Buat baris baru
+                            # 1. BUAT BARIS KOSONG (SPACER) SEBAGAI JARAK 1 SPASI
+                            spacer_row = target_table.add_row()
+                            for cell in spacer_row.cells:
+                                p = cell.paragraphs[0]
+                                p.paragraph_format.space_before = Pt(0)
+                                p.paragraph_format.space_after = Pt(0)
+                                p.paragraph_format.line_spacing = 1.0
+                                # Masukkan font kosong agar baris ini punya tinggi setara huruf (1 spasi)
+                                run = p.add_run("")
+                                apply_bookman_font(run, size=11)
+                            
+                            # Sisipkan baris kosong tepat di bawah baris terakhir
+                            current_tr.addnext(spacer_row._tr)
+                            current_tr = spacer_row._tr
+                            
+                            # 2. BUAT BARIS UNTUK DATA BARU
                             new_row = target_table.add_row()
                             
-                            # KUNCI PERBAIKAN: Pindahkan baris baru ini agar berada tepat di BAWAH data sebelumnya
-                            # Ini mencegah baris baru masuk di bawah garis penutup template
-                            prev_row = target_table.rows[template_row_idx + index - 1]
-                            prev_row._tr.addnext(new_row._tr)
+                            # Sisipkan baris data tepat di bawah baris kosong (spacer)
+                            current_tr.addnext(new_row._tr)
+                            current_tr = new_row._tr 
                             
                             target_row = new_row
                         
