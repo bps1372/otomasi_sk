@@ -84,7 +84,8 @@ def set_bottom_border(cell):
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
     
-    st.info("sedang diproses....") # <--- Tulisan ditambahkan di sini
+    # --- PESAN DIPROSES DITAMBAHKAN DI SINI ---
+    st.info("sedang diproses....")
     
     with st.spinner('Mengunduh template dari GitHub dan memproses dokumen...'):
         try:
@@ -143,7 +144,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         if index == 0:
                             target_row = target_table.rows[template_row_idx]
                         else:
-                            # 1. Tambah baris kosong (Spasi antar data)
+                            # 1. Tambah baris kosong (Spasi antar data) - KODE SPASI TETAP DIPERTAHANKAN
                             spacer = target_table.add_row()
                             for cell in spacer.cells:
                                 p = cell.paragraphs[0]
@@ -163,7 +164,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
                     
-                    # Baris spasi terakhir sebelum garis ganda
+                    # Baris spasi terakhir sebelum garis ganda - KODE SPASI TETAP DIPERTAHANKAN
                     final_spacer = target_table.add_row()
                     for cell in final_spacer.cells:
                         p = cell.paragraphs[0]
