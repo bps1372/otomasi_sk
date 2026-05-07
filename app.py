@@ -64,6 +64,24 @@ def set_cell_text_with_font(cell, text):
         for run in p.runs:
             apply_bookman_font(run, size=11)
 
+def set_top_border(cell):
+    """Menerapkan garis ganda hitam (tipis atas, tebal bawah) di bagian atas sebuah sel"""
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    tcBorders = tcPr.find(qn('w:tcBorders'))
+    if tcBorders is None:
+        tcBorders = OxmlElement('w:tcBorders')
+        tcPr.append(tcBorders)
+    top = tcBorders.find(qn('w:top'))
+    if top is None:
+        top = OxmlElement('w:top')
+        tcBorders.append(top)
+    
+    top.set(qn('w:val'), 'thinThickSmallGap')
+    top.set(qn('w:sz'), '18')
+    top.set(qn('w:space'), '0')
+    top.set(qn('w:color'), '000000')
+
 def set_bottom_border(cell):
     """Menerapkan garis ganda hitam (tipis atas, tebal bawah) di bagian bawah sebuah sel"""
     tc = cell._tc
@@ -77,21 +95,14 @@ def set_bottom_border(cell):
         bottom = OxmlElement('w:bottom')
         tcBorders.append(bottom)
     
-    # --- UPDATE GARIS BAWAH DISINI ---
-    # bottom.set(qn('w:val'), 'double') # Kode lama
-    bottom.set(qn('w:val'), 'thinThickSmallGap') # Mengubah tipe garis: tipis atas, tebal bawah
-    
-    # bottom.set(qn('w:sz'), '12') # Kode lama
-    bottom.set(qn('w:sz'), '18') # Ukuran diperbesar sedikit agar tebalnya lebih terlihat (18 = 2.25 pt)
-    # ----------------------------------
-    
+    bottom.set(qn('w:val'), 'thinThickSmallGap') 
+    bottom.set(qn('w:sz'), '18') 
     bottom.set(qn('w:space'), '0')
     bottom.set(qn('w:color'), '000000')
 
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
     
-    # --- PESAN DIPROSES DITAMBAHKAN DI SINI ---
     st.info("sedang diproses....")
     
     with st.spinner('Mengunduh template dari GitHub dan memproses dokumen...'):
@@ -147,11 +158,17 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                     if target_table: break
                 
                 if target_table and template_row_idx != -1:
+                    
+                    # ---> TAMBAHAN BARU: Memaksa garis atas tabel menjadi tipis-tebal
+                    for cell in target_table.rows[0].cells:
+                        set_top_border(cell)
+                    # <---
+                    
                     for index, row_data in edited_df.iterrows():
                         if index == 0:
                             target_row = target_table.rows[template_row_idx]
                         else:
-                            # 1. Tambah baris kosong (Spasi antar data) - KODE SPASI TETAP DIPERTAHANKAN
+                            # 1. Tambah baris kosong (Spasi antar data)
                             spacer = target_table.add_row()
                             for cell in spacer.cells:
                                 p = cell.paragraphs[0]
@@ -171,13 +188,13 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
                         set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
                     
-                    # Baris spasi terakhir sebelum garis ganda - KODE SPASI TETAP DIPERTAHANKAN
+                    # Baris spasi terakhir sebelum garis ganda (bawah)
                     final_spacer = target_table.add_row()
                     for cell in final_spacer.cells:
                         p = cell.paragraphs[0]
                         p.paragraph_format.space_before = Pt(0)
                         p.paragraph_format.space_after = Pt(0)
-                        p.paragraph_format.line_spacing = 1.5
+                        p.paragraph_format.line_spacing = 1.0
                         set_bottom_border(cell)
                 else:
                     st.warning("⚠️ Peringatan: Teks {nama} tidak ditemukan.")
