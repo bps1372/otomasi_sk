@@ -57,7 +57,7 @@ def set_cell_text_with_font(cell, text):
     for p in cell.paragraphs:
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(0)
-        p.paragraph_format.line_spacing = 1
+        p.paragraph_format.line_spacing = 1.5
         for run in p.runs:
             apply_bookman_font(run, size=12)
 
