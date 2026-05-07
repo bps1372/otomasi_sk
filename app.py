@@ -1,16 +1,4 @@
-Kejadian ini sangat wajar terjadi di Microsoft Word. Masalah ini muncul karena **baris kosong terakhir (spacer)** atau **garis penutup tabel** terdorong ke halaman baru. Karena elemen tersebut secara teknis masih berstatus sebagai "bagian dari tabel", Word otomatis mencetak ulang header-nya, meskipun tidak ada teks datanya.
 
-Untuk mengatasi ini, kita tidak bisa sekadar mematikan pengulangan header. Solusi terbaik dan paling rapi secara format dokumen adalah menggunakan fitur **"Keep with next" (Pertahankan dengan baris berikutnya)** bawaan Word.
-
-**Logika perbaikannya:**
-Kita akan memberi instruksi pada kode agar:
-1. **Baris data paling terakhir** diikat/ditempelkan dengan baris *spacer* di bawahnya.
-2. Akibatnya, jika baris penutup tabel terdorong ke halaman dua, ia akan **otomatis menarik baris data terakhir ikut ke halaman dua**.
-3. Hasilnya: Halaman baru tidak akan pernah kosong. Jika ada header di halaman baru, pasti akan selalu ada minimal 1 baris data di bawahnya.
-
-Berikut adalah kode lengkap yang sudah disempurnakan. Perhatikan penambahan parameter `keep_next` pada fungsi `set_cell_text_with_font`:
-
-```python
 import streamlit as st
 import pandas as pd
 from docx import Document
