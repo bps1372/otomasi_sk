@@ -133,10 +133,10 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                                 p = cell.paragraphs[0]
                                 p.paragraph_format.space_before = Pt(0)
                                 p.paragraph_format.space_after = Pt(0)
-                                p.paragraph_format.line_spacing = 1.0
+                                p.paragraph_format.line_spacing = 1.5
                                 # Masukkan font kosong agar baris ini punya tinggi setara huruf (1 spasi)
                                 run = p.add_run("")
-                                apply_bookman_font(run, size=11)
+                                apply_bookman_font(run, size=12)
                             
                             # Sisipkan baris kosong tepat di bawah baris terakhir
                             current_tr.addnext(spacer_row._tr)
