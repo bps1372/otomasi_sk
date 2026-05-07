@@ -1,8 +1,21 @@
+Kejadian ini sangat wajar terjadi di Microsoft Word. Masalah ini muncul karena **baris kosong terakhir (spacer)** atau **garis penutup tabel** terdorong ke halaman baru. Karena elemen tersebut secara teknis masih berstatus sebagai "bagian dari tabel", Word otomatis mencetak ulang header-nya, meskipun tidak ada teks datanya.
+
+Untuk mengatasi ini, kita tidak bisa sekadar mematikan pengulangan header. Solusi terbaik dan paling rapi secara format dokumen adalah menggunakan fitur **"Keep with next" (Pertahankan dengan baris berikutnya)** bawaan Word.
+
+**Logika perbaikannya:**
+Kita akan memberi instruksi pada kode agar:
+1. **Baris data paling terakhir** diikat/ditempelkan dengan baris *spacer* di bawahnya.
+2. Akibatnya, jika baris penutup tabel terdorong ke halaman dua, ia akan **otomatis menarik baris data terakhir ikut ke halaman dua**.
+3. Hasilnya: Halaman baru tidak akan pernah kosong. Jika ada header di halaman baru, pasti akan selalu ada minimal 1 baris data di bawahnya.
+
+Berikut adalah kode lengkap yang sudah disempurnakan. Perhatikan penambahan parameter `keep_next` pada fungsi `set_cell_text_with_font`:
+
+```python
 import streamlit as st
 import pandas as pd
 from docx import Document
 from docx.shared import Pt
-from docx.oxml import OxmlElement # Pastikan ini di-import
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import io
 import requests
@@ -52,13 +65,16 @@ def apply_bookman_font(run, size=11):
     run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Bookman Old Style')
     run.font.size = Pt(size)
 
-def set_cell_text_with_font(cell, text):
+def set_cell_text_with_font(cell, text, keep_next=False):
     """Memasukkan teks ke sel tabel sambil mempertahankan font Bookman"""
     cell.text = text
     for p in cell.paragraphs:
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(0)
         p.paragraph_format.line_spacing = 1.5
+        # KUNCI PERBAIKAN: Jika True, baris ini tidak boleh terpisah dengan baris bawahnya
+        if keep_next:
+            p.paragraph_format.keep_with_next = True
         for run in p.runs:
             apply_bookman_font(run, size=12)
 
@@ -129,60 +145,60 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                 
                 if target_table and template_row_idx != -1:
                     
-                    # ---> TAMBAHAN BARU: Set baris header agar berulang di halaman baru <---
-                    # Kita loop baris dari paling atas (0) sampai sebelum baris data (template_row_idx)
+                    # Set baris header agar berulang di halaman baru
                     for i in range(template_row_idx):
                         set_repeat_table_header(target_table.rows[i])
 
-                    # Ambil elemen XML dari baris template sebagai titik awal
                     current_tr = target_table.rows[template_row_idx]._tr
+                    total_data = len(edited_df)
                     
                     for index, row_data in edited_df.iterrows():
                         if index == 0:
-                            # Data pertama menimpa baris template {nama}
                             target_row = target_table.rows[template_row_idx]
                         else:
-                            # 1. BUAT BARIS KOSONG (SPACER) SEBAGAI JARAK ANTAR DATA (1 Spasi)
+                            # 1. BARIS KOSONG (SPACER) ANTAR DATA
                             spacer_row = target_table.add_row()
                             for cell in spacer_row.cells:
                                 p = cell.paragraphs[0]
                                 p.paragraph_format.space_before = Pt(0)
                                 p.paragraph_format.space_after = Pt(0)
                                 p.paragraph_format.line_spacing = 1.5 
+                                # Mengikat spacer dengan data di bawahnya agar tidak ada baris kosong nyasar di awal halaman baru
+                                p.paragraph_format.keep_with_next = True 
                                 run = p.add_run("")
                                 apply_bookman_font(run, size=12)
                             
-                            # Sisipkan baris kosong tepat di bawah baris terakhir
                             current_tr.addnext(spacer_row._tr)
                             current_tr = spacer_row._tr
                             
-                            # 2. BUAT BARIS UNTUK DATA BARU
+                            # 2. BARIS DATA BARU
                             new_row = target_table.add_row()
-                            
-                            # Sisipkan baris data tepat di bawah baris kosong (spacer)
                             current_tr.addnext(new_row._tr)
                             current_tr = new_row._tr 
-                            
                             target_row = new_row
                         
-                        # Isi data ke dalam baris
-                        set_cell_text_with_font(target_row.cells[0], f"{index + 1}.")
-                        set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]))
-                        set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]))
-                        set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]))
-                        set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}")
+                        # Cek apakah ini baris data paling terakhir
+                        is_last_row = (index == total_data - 1)
+                        
+                        # Isi data ke dalam baris (dengan membawa flag is_last_row)
+                        set_cell_text_with_font(target_row.cells[0], f"{index + 1}.", keep_next=is_last_row)
+                        set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]), keep_next=is_last_row)
+                        set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]), keep_next=is_last_row)
+                        set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]), keep_next=is_last_row)
+                        set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}", keep_next=is_last_row)
 
-                    # 3. TAMBAHKAN JARAK KHUSUS (1.5 SPASI) SETELAH SEMUA DATA SELESAI
+                    # 3. JARAK KHUSUS SEBELUM GARIS PENUTUP TABEL
                     final_spacer_row = target_table.add_row()
                     for cell in final_spacer_row.cells:
                         p = cell.paragraphs[0]
                         p.paragraph_format.space_before = Pt(0)
                         p.paragraph_format.space_after = Pt(0)
-                        p.paragraph_format.line_spacing = 1 # Jarak khusus bagian paling bawah
+                        p.paragraph_format.line_spacing = 1 
+                        # Mengikat baris ini ke teks Tanda Tangan di bawahnya
+                        p.paragraph_format.keep_with_next = True 
                         run = p.add_run("")
                         apply_bookman_font(run, size=12)
                     
-                    # Sisipkan tepat setelah data terakhir
                     current_tr.addnext(final_spacer_row._tr)
 
                 else:
@@ -208,3 +224,4 @@ if st.session_state.doc_ready:
         file_name=st.session_state.doc_name,
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+```
