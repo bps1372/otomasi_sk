@@ -164,7 +164,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         p = cell.paragraphs[0]
                         p.paragraph_format.space_before = Pt(0)
                         p.paragraph_format.space_after = Pt(0)
-                        p.paragraph_format.line_spacing = 1.5 # Jarak 1.5 khusus bagian paling bawah
+                        p.paragraph_format.line_spacing = 1 # Jarak 1.5 khusus bagian paling bawah
                         run = p.add_run("")
                         apply_bookman_font(run, size=12)
                     
