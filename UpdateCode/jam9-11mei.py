@@ -1,3 +1,6 @@
+# UPDATE 09.02 11 Mei 2026
+
+
 import streamlit as st
 import pandas as pd
 from docx import Document
@@ -31,7 +34,7 @@ with col2:
 # 2. Input Data Tabel (Dinamis dengan Fitur Tambah Baris)
 st.subheader("F. Lampiran")
 
-# --- FITUR TAMBAH BARIS OTOMATIS (MENGGUNAKAN SESSION STATE AGAR TIDAK HILANG) ---
+# Inisialisasi Session State
 if "df_lampiran" not in st.session_state:
     st.session_state.df_lampiran = pd.DataFrame({
         "Nama/Jabatan": ["si ABCD"],
@@ -40,12 +43,19 @@ if "df_lampiran" not in st.session_state:
         "Honor": ["50.000"]
     })
 
+# FUNGSI UNTUK UPDATE DATA (Agar tidak hilang saat paste/edit)
+def update_editor():
+    if "editor_key" in st.session_state:
+        # Mengambil data terbaru dari widget editor ke session state
+        st.session_state.df_lampiran = st.session_state["editor_key"]["edited_rows"]
+        # Catatan: num_rows="dynamic" menangani penambahan baris manual di widget
+
 col_n1, col_n2 = st.columns([1, 2])
 with col_n1:
-    baris_baru = st.number_input("Ingin tambah berapa baris?", min_value=1, max_value=500, value=1)
+    baris_baru = st.number_input("Ingin tambah berapa baris kosong?", min_value=1, max_value=500, value=1)
 with col_n2:
     st.write("##")
-    if st.button("Tambahkan Baris"):
+    if st.button("Tambahkan Baris Kosong"):
         new_data = pd.DataFrame({
             "Nama/Jabatan": [""] * baris_baru,
             "NIP/Golongan": [""] * baris_baru,
@@ -55,10 +65,19 @@ with col_n2:
         st.session_state.df_lampiran = pd.concat([st.session_state.df_lampiran, new_data], ignore_index=True)
         st.rerun()
 
-# Editor Tabel (Menggunakan Key agar sinkron)
-edited_df = st.data_editor(st.session_state.df_lampiran, num_rows="dynamic", use_container_width=True, key="editor_key")
+# Editor Tabel dengan num_rows="dynamic" memungkinkan paste langsung banyak baris
+# Data disinkronkan ke st.session_state.df_lampiran secara otomatis
+edited_df = st.data_editor(
+    st.session_state.df_lampiran, 
+    num_rows="dynamic", 
+    use_container_width=True, 
+    key="editor_key"
+)
+
+# Kunci data terbaru ke session state sebelum proses dokumen
 st.session_state.df_lampiran = edited_df
 
+# --- STATE UNTUK DOKUMEN ---
 if "doc_ready" not in st.session_state:
     st.session_state.doc_ready = False
 if "doc_data" not in st.session_state:
@@ -66,7 +85,7 @@ if "doc_data" not in st.session_state:
 if "doc_name" not in st.session_state:
     st.session_state.doc_name = ""
 
-# --- FUNGSI CUSTOM FONT & XML (BASE AWAL) ---
+# --- FUNGSI CUSTOM FONT & XML ---
 def apply_bookman_font(run, size=11):
     run.font.name = 'Bookman Old Style'
     run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Bookman Old Style')
@@ -92,115 +111,115 @@ def set_repeat_table_header(row):
 
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
-    st.info("Sedang diproses....")
-    with st.spinner('Mengunduh template dari GitHub dan memproses dokumen...'):
-        try:
-            response = requests.get(GITHUB_RAW_URL)
-            if response.status_code != 200:
-                st.error(f"Gagal mengunduh template (Status: {response.status_code}).")
-            else:
-                template_file = io.BytesIO(response.content)
-                doc = Document(template_file)
-                
-                replacements = {
-                    "{tentang}": tentang,
-                    "{pelaksanaan}": pelaksanaan,
-                    "{pelaksanan}": pelaksanaan, 
-                    "{petugas}": petugas,
-                    "{tanggal}": tanggal,
-                    "{nomor}": nomor
-                }
-                
-                # FUNGSI REPLACE BASE AWAL (DIPERTAHANKAN)
-                def replace_text_in_paragraphs(paragraphs):
-                    for p in paragraphs:
-                        original_text = p.text
-                        changed = False
-                        for key, value in replacements.items():
-                            if key in original_text:
-                                original_text = original_text.replace(key, value)
-                                changed = True
-                        if changed:
-                            p.text = original_text
-                            for run in p.runs:
-                                apply_bookman_font(run, size=12)
-
-                replace_text_in_paragraphs(doc.paragraphs)
-                for table in doc.tables:
-                    for row in table.rows:
-                        for cell in row.cells:
-                            # Hanya replace jika tidak ada placeholder tabel lampiran
-                            if "{nama}" not in cell.text.lower():
-                                replace_text_in_paragraphs(cell.paragraphs)
-
-                # --- Logika Tabel Lampiran (BASE AWAL) ---
-                target_table = None
-                template_row_idx = -1
-                for table in doc.tables:
-                    for i, row in enumerate(table.rows):
-                        for cell in row.cells:
-                            if "{nama}" in cell.text.lower():
-                                target_table = table
-                                template_row_idx = i
-                                break
-                        if target_table: break
-                    if target_table: break
-                
-                if target_table and template_row_idx != -1:
-                    for i in range(template_row_idx):
-                        set_repeat_table_header(target_table.rows[i])
-
-                    current_tr = target_table.rows[template_row_idx]._tr
-                    total_data = len(edited_df)
+    if edited_df.empty:
+        st.warning("Data lampiran masih kosong!")
+    else:
+        st.info("Sedang diproses....")
+        with st.spinner('Mengunduh template dan memproses dokumen...'):
+            try:
+                response = requests.get(GITHUB_RAW_URL)
+                if response.status_code != 200:
+                    st.error(f"Gagal mengunduh template (Status: {response.status_code}).")
+                else:
+                    template_file = io.BytesIO(response.content)
+                    doc = Document(template_file)
                     
-                    for index, row_data in edited_df.iterrows():
-                        if index == 0:
-                            target_row = target_table.rows[template_row_idx]
-                        else:
-                            spacer_row = target_table.add_row()
-                            for cell in spacer_row.cells:
-                                p = cell.paragraphs[0]
-                                p.paragraph_format.space_before = Pt(0)
-                                p.paragraph_format.space_after = Pt(0)
-                                p.paragraph_format.line_spacing = 1.5 
-                                p.paragraph_format.keep_with_next = True 
-                                run = p.add_run("")
-                                apply_bookman_font(run, size=12)
-                            
-                            current_tr.addnext(spacer_row._tr)
-                            current_tr = spacer_row._tr
-                            
-                            new_row = target_table.add_row()
-                            current_tr.addnext(new_row._tr)
-                            current_tr = new_row._tr 
-                            target_row = new_row
+                    replacements = {
+                        "{tentang}": tentang,
+                        "{pelaksanaan}": pelaksanaan,
+                        "{pelaksanan}": pelaksanaan, 
+                        "{petugas}": petugas,
+                        "{tanggal}": tanggal,
+                        "{nomor}": nomor
+                    }
+                    
+                    def replace_text_in_paragraphs(paragraphs):
+                        for p in paragraphs:
+                            original_text = p.text
+                            changed = False
+                            for key, value in replacements.items():
+                                if key in original_text:
+                                    original_text = original_text.replace(key, value)
+                                    changed = True
+                            if changed:
+                                p.text = original_text
+                                for run in p.runs:
+                                    apply_bookman_font(run, size=12)
+
+                    replace_text_in_paragraphs(doc.paragraphs)
+                    for table in doc.tables:
+                        for row in table.rows:
+                            for cell in row.cells:
+                                if "{nama}" not in cell.text.lower():
+                                    replace_text_in_paragraphs(cell.paragraphs)
+
+                    target_table = None
+                    template_row_idx = -1
+                    for table in doc.tables:
+                        for i, row in enumerate(table.rows):
+                            for cell in row.cells:
+                                if "{nama}" in cell.text.lower():
+                                    target_table = table
+                                    template_row_idx = i
+                                    break
+                            if target_table: break
+                        if target_table: break
+                    
+                    if target_table and template_row_idx != -1:
+                        for i in range(template_row_idx):
+                            set_repeat_table_header(target_table.rows[i])
+
+                        current_tr = target_table.rows[template_row_idx]._tr
+                        total_data = len(edited_df)
                         
-                        is_last_row = (index == total_data - 1)
-                        set_cell_text_with_font(target_row.cells[0], f"{index + 1}.", keep_next=is_last_row)
-                        set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]), keep_next=is_last_row)
-                        set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]), keep_next=is_last_row)
-                        set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]), keep_next=is_last_row)
-                        set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}", keep_next=is_last_row)
+                        for index, row_data in edited_df.iterrows():
+                            if index == 0:
+                                target_row = target_table.rows[template_row_idx]
+                            else:
+                                spacer_row = target_table.add_row()
+                                for cell in spacer_row.cells:
+                                    p = cell.paragraphs[0]
+                                    p.paragraph_format.space_before = Pt(0)
+                                    p.paragraph_format.space_after = Pt(0)
+                                    p.paragraph_format.line_spacing = 1.5 
+                                    p.paragraph_format.keep_with_next = True 
+                                    run = p.add_run("")
+                                    apply_bookman_font(run, size=12)
+                                
+                                current_tr.addnext(spacer_row._tr)
+                                current_tr = spacer_row._tr
+                                
+                                new_row = target_table.add_row()
+                                current_tr.addnext(new_row._tr)
+                                current_tr = new_row._tr 
+                                target_row = new_row
+                            
+                            is_last_row = (index == total_data - 1)
+                            set_cell_text_with_font(target_row.cells[0], f"{index + 1}.", keep_next=is_last_row)
+                            set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]), keep_next=is_last_row)
+                            set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]), keep_next=is_last_row)
+                            set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]), keep_next=is_last_row)
+                            set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}", keep_next=is_last_row)
 
-                    final_spacer_row = target_table.add_row()
-                    for cell in final_spacer_row.cells:
-                        p = cell.paragraphs[0]
-                        p.paragraph_format.line_spacing = 1 
-                        p.paragraph_format.keep_with_next = True 
-                        run = p.add_run("")
-                        apply_bookman_font(run, size=12)
-                    current_tr.addnext(final_spacer_row._tr)
+                        final_spacer_row = target_table.add_row()
+                        for cell in final_spacer_row.cells:
+                            p = cell.paragraphs[0]
+                            p.paragraph_format.line_spacing = 1 
+                            p.paragraph_format.keep_with_next = True 
+                            run = p.add_run("")
+                            apply_bookman_font(run, size=12)
+                        current_tr.addnext(final_spacer_row._tr)
 
-                doc_io = io.BytesIO()
-                doc.save(doc_io)
-                doc_io.seek(0)
-                st.session_state.doc_data = doc_io.getvalue()
-                st.session_state.doc_name = f"SK_{tentang.replace(' ', '_')}.docx"
-                st.session_state.doc_ready = True
-                
-        except Exception as e:
-            st.error(f"Terjadi kesalahan teknis: {e}")
-            st.session_state.doc_ready = False
+                    doc_io = io.BytesIO()
+                    doc.save(doc_io)
+                    doc_io.seek(0)
+                    st.session_state.doc_data = doc_io.getvalue()
+                    st.session_state.doc_name = f"SK_{tentang.replace(' ', '_')}.docx"
+                    st.session_state.doc_ready = True
+                    
+            except Exception as e:
+                st.error(f"Terjadi kesalahan teknis: {e}")
+                st.session_state.doc_ready = False
 
 # 4. Menampilkan Tombol Unduh
 if st.session_state.doc_ready:
