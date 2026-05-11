@@ -1,7 +1,6 @@
 # UPDATE 09.02 11 Mei 2026
 
 
-# UPDATE 09.02 11 Mei 2026
 import streamlit as st
 import pandas as pd
 from docx import Document
