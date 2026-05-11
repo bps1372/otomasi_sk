@@ -57,9 +57,9 @@ with col_n2:
     st.write("##")
     if st.button("Tambahkan Baris Kosong"):
         new_data = pd.DataFrame({
-            "Nama/Jabatan": [""] * baris_baru,
-            "NIP/Golongan": [""] * baris_baru,
-            "Posisi": [""] * baris_baru,
+            "Nama/Jabatan": ["si C"] * baris_baru,
+            "NIP/Golongan": ["199102192019031001 Gol: III/b"] * baris_baru,
+            "Posisi": ["PML"] * baris_baru,
             "Honor": ["50.000"] * baris_baru
         })
         st.session_state.df_lampiran = pd.concat([st.session_state.df_lampiran, new_data], ignore_index=True)
