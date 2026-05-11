@@ -1,4 +1,4 @@
-# UPDATE 09.02 11 Mei 2026
+# UPDATE 11.07 11 Mei 2026
 
 
 import streamlit as st
@@ -43,12 +43,9 @@ if "df_lampiran" not in st.session_state:
         "Honor": ["50.000"]
     })
 
-# FUNGSI UNTUK UPDATE DATA (Agar tidak hilang saat paste/edit)
-def update_editor():
-    if "editor_key" in st.session_state:
-        # Mengambil data terbaru dari widget editor ke session state
-        st.session_state.df_lampiran = st.session_state["editor_key"]["edited_rows"]
-        # Catatan: num_rows="dynamic" menangani penambahan baris manual di widget
+# State baru untuk menyimpan data hasil editan agar tidak me-refresh tabel secara terus-menerus
+if "edited_df" not in st.session_state:
+    st.session_state.edited_df = st.session_state.df_lampiran
 
 col_n1, col_n2 = st.columns([1, 2])
 with col_n1:
@@ -62,11 +59,11 @@ with col_n2:
             "Posisi": ["PML"] * baris_baru,
             "Honor": ["50.000"] * baris_baru
         })
-        st.session_state.df_lampiran = pd.concat([st.session_state.df_lampiran, new_data], ignore_index=True)
+        # Gabungkan data BARU dengan data TERAKHIR yang sudah diedit (bukan df awal)
+        st.session_state.df_lampiran = pd.concat([st.session_state.edited_df, new_data], ignore_index=True)
         st.rerun()
 
-# Editor Tabel dengan num_rows="dynamic" memungkinkan paste langsung banyak baris
-# Data disinkronkan ke st.session_state.df_lampiran secara otomatis
+# Editor Tabel dengan num_rows="dynamic"
 edited_df = st.data_editor(
     st.session_state.df_lampiran, 
     num_rows="dynamic", 
@@ -74,8 +71,8 @@ edited_df = st.data_editor(
     key="editor_key"
 )
 
-# Kunci data terbaru ke session state sebelum proses dokumen
-st.session_state.df_lampiran = edited_df
+# Kunci data terbaru ke session state "edited_df" (Bukan df_lampiran agar tabel tidak kehilangan fokus)
+st.session_state.edited_df = edited_df
 
 # --- STATE UNTUK DOKUMEN ---
 if "doc_ready" not in st.session_state:
@@ -230,3 +227,4 @@ if st.session_state.doc_ready:
         file_name=st.session_state.doc_name,
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
