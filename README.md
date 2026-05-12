@@ -1,6 +1,6 @@
 # otomasi_sk
 
-Generate otomatis SK Keputusan Kuasa Pengguna Anggaran
+Generate otomatis SK Keputusan Kuasa Pengguna Anggaran Instan (GESIT)
 
 https://auto-sura1372.streamlit.app/
 
