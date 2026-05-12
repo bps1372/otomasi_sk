@@ -17,3 +17,6 @@ Update Autosura
 
 +fitur excel csv:
 upload csv/excel nambahin otomatis lampiran
+
+
++ nanti juag aday yang perjalanan dinas, nanti inputa lampiran foto otomatis bikin suratnya......
