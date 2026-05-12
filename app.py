@@ -10,7 +10,7 @@ from docx.oxml.ns import qn
 import io
 import requests
 
-st.set_page_config(page_title="AutoSura1372", layout="centered")
+st.set_page_config(page_title="GESIT - BPS1372", layout="centered")
 
 st.title("📝 GESIT (Generate Surat Instan)")
 st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok.")
