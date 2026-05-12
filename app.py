@@ -228,3 +228,5 @@ if st.session_state.doc_ready:
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
+st.write("Copyright @BPS Kota Solok")
+
