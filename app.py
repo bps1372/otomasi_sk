@@ -12,7 +12,7 @@ import requests
 
 st.set_page_config(page_title="AutoSura1372", layout="centered")
 
-st.title("📝 Auto-Sura (Automatis Surat)")
+st.title("📝 GESIT (Generate Surat Instan)")
 st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok.")
 
 # --- KONFIGURASI GITHUB ---
