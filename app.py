@@ -12,7 +12,7 @@ import requests
 
 st.set_page_config(page_title="GESIT - BPS1372", layout="centered")
 
-st.title("📝 GESIT (Generate Surat Instan)")
+st.title("📝 GESIT (Generate SK Instan)")
 st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok.")
 
 # --- KONFIGURASI GITHUB ---
