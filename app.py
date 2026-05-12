@@ -233,5 +233,5 @@ st.write("")
 st.write("")
 st.write("")
 
-st.write("Copyright @BPS Kota Solok")
+st.write("                       Copyright @BPS Kota Solok")
 
