@@ -285,4 +285,4 @@ st.write("")
 st.write("")
 st.write("")
 
-st.write("                       Copyright @BPS Kota Solok") 13.00
+st.write("                       Copyright @BPS Kota Solok") 
