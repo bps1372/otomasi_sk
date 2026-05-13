@@ -1,4 +1,4 @@
-# 13 Mei 13.35
+#13 Mei 13.35
 
 import streamlit as st
 import pandas as pd
@@ -48,6 +48,10 @@ if "df_lampiran" not in st.session_state:
 if "edited_df" not in st.session_state:
     st.session_state.edited_df = st.session_state.df_lampiran
 
+# State khusus untuk Nama Kolom "No."
+if "nama_kolom_no" not in st.session_state:
+    st.session_state.nama_kolom_no = "No."
+
 # --- PANEL PENGATURAN BARIS & KOLOM ---
 st.markdown("##### Pengaturan Baris & Kolom")
 col_n1, col_n2 = st.columns(2)
@@ -80,9 +84,14 @@ with col_n2:
         st.info("Batas maksimal 4 kolom tambahan telah tercapai.")
 
     st.markdown("---")
-    kolom_lama = st.selectbox("Pilih kolom untuk diubah namanya:", current_cols)
+    
+    # Input khusus untuk mengubah nama kolom pertama (No.)
+    st.session_state.nama_kolom_no = st.text_input("Ubah nama kolom 'No.':", value=st.session_state.nama_kolom_no)
+    
+    # Input untuk mengubah nama kolom-kolom tabel lainnya
+    kolom_lama = st.selectbox("Pilih kolom tabel untuk diubah namanya:", current_cols)
     nama_baru = st.text_input("Ubah nama menjadi:", key="input_ubah_kolom")
-    if st.button("📝 Simpan Nama Baru"):
+    if st.button("📝 Simpan Nama Baru Tabel"):
         if nama_baru and nama_baru not in current_cols:
             st.session_state.edited_df = st.session_state.edited_df.rename(columns={kolom_lama: nama_baru})
             st.session_state.df_lampiran = st.session_state.edited_df
@@ -238,6 +247,11 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         # 2. Tulis Ulang Header (DENGAN BOLD & RATA TENGAH)
                         if len(target_table.rows) > 0:
                             header_text_row = target_table.rows[0]
+                            
+                            # UPDATE KHUSUS UNTUK KOLOM NO:
+                            if len(header_text_row.cells) > 0:
+                                set_cell_text_with_font(header_text_row.cells[0], st.session_state.nama_kolom_no, keep_next=True, bold=True, center=True)
+                            
                             for col_idx, col_name in enumerate(edited_df.columns):
                                 cell_idx = col_idx + 1
                                 if cell_idx < len(header_text_row.cells):
