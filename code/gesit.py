@@ -1,6 +1,7 @@
-# Update 13 Mei 2026i
+# Update 13 Mei 2026 13.03
 
-mport streamlit as st
+
+import streamlit as st
 import pandas as pd
 from docx import Document
 from docx.shared import Pt, Cm
