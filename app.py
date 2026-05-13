@@ -1,14 +1,15 @@
-# UPDATE 11.07 11 Mei 2026
+# Update 13 Mei 2026 13.03
 
 
 import streamlit as st
 import pandas as pd
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, Cm
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import io
 import requests
+import copy
 
 st.set_page_config(page_title="GESIT - BPS1372", layout="centered")
 
@@ -31,39 +32,65 @@ with col2:
     tentang = st.text_input("D.Judul [tulis dengan huruf besar]", placeholder="Contoh: PETUGAS SENSUS EKONOMI 2026")
     pelaksanaan = st.text_input("E.Pelaksanaan Kegiatan", placeholder="Contoh: Sensus Ekonomi 2026")
 
-# 2. Input Data Tabel (Dinamis dengan Fitur Tambah Baris)
+# 2. Input Data Tabel (Dinamis dengan Fitur Tambah Baris & Kolom)
 st.subheader("F. Lampiran")
 
 # Inisialisasi Session State
 if "df_lampiran" not in st.session_state:
     st.session_state.df_lampiran = pd.DataFrame({
-        "Nama/Jabatan": ["si ABCD"],
-        "NIP/Golongan": ["199102192019031001 Gol: III/b"],
+        "Nama/Jabatan": ["Bapak WXYZABCDEFGHI Statistisi Ahli Muda"],
+        "NIP/Golongan": ["200202192019031001 Gol: III/b"],
         "Posisi": ["PML"],
         "Honor": ["50.000"]
     })
 
-# State baru untuk menyimpan data hasil editan agar tidak me-refresh tabel secara terus-menerus
+# State untuk menyimpan data hasil editan
 if "edited_df" not in st.session_state:
     st.session_state.edited_df = st.session_state.df_lampiran
 
-col_n1, col_n2 = st.columns([1, 2])
+# --- PANEL PENGATURAN BARIS & KOLOM ---
+st.markdown("##### Pengaturan Baris & Kolom")
+col_n1, col_n2 = st.columns(2)
+
+# Kolom Kiri: Tambah Baris
 with col_n1:
-    baris_baru = st.number_input("Ingin tambah berapa baris kosong?", min_value=1, max_value=500, value=1)
-with col_n2:
-    st.write("##")
-    if st.button("Tambahkan Baris Kosong"):
-        new_data = pd.DataFrame({
-            "Nama/Jabatan": ["si C"] * baris_baru,
-            "NIP/Golongan": ["199102192019031001 Gol: III/b"] * baris_baru,
-            "Posisi": ["PML"] * baris_baru,
-            "Honor": ["50.000"] * baris_baru
-        })
-        # Gabungkan data BARU dengan data TERAKHIR yang sudah diedit (bukan df awal)
+    st.markdown("**1. Tambah Baris Kosong**")
+    baris_baru = st.number_input("Jumlah baris kosong:", min_value=1, max_value=500, value=1)
+    if st.button("Tambahkan Baris"):
+        new_data_dict = {col: [""] * baris_baru for col in st.session_state.edited_df.columns}
+        new_data = pd.DataFrame(new_data_dict)
         st.session_state.df_lampiran = pd.concat([st.session_state.edited_df, new_data], ignore_index=True)
         st.rerun()
 
+# Kolom Kanan: Tambah & Edit SEMUA Kolom (Maks +4 Kolom Baru)
+with col_n2:
+    st.markdown("**2. Pengaturan Kolom (Maks. Tambah 4)**")
+    current_cols = list(st.session_state.edited_df.columns)
+    
+    jumlah_kolom_tambahan = len(current_cols) - 4
+    
+    if jumlah_kolom_tambahan < 4:
+        kolom_baru = st.text_input("Nama Kolom Baru:", key="input_tambah_kolom")
+        if st.button("➕ Tambah Kolom"):
+            if kolom_baru and kolom_baru not in current_cols:
+                st.session_state.edited_df[kolom_baru] = ""
+                st.session_state.df_lampiran = st.session_state.edited_df
+                st.rerun()
+    else:
+        st.info("Batas maksimal 4 kolom tambahan telah tercapai.")
+
+    st.markdown("---")
+    kolom_lama = st.selectbox("Pilih kolom untuk diubah namanya:", current_cols)
+    nama_baru = st.text_input("Ubah nama menjadi:", key="input_ubah_kolom")
+    if st.button("📝 Simpan Nama Baru"):
+        if nama_baru and nama_baru not in current_cols:
+            st.session_state.edited_df = st.session_state.edited_df.rename(columns={kolom_lama: nama_baru})
+            st.session_state.df_lampiran = st.session_state.edited_df
+            st.rerun()
+# -----------------------------------------------------
+
 # Editor Tabel dengan num_rows="dynamic"
+st.markdown("##### Preview Data Lampiran")
 edited_df = st.data_editor(
     st.session_state.df_lampiran, 
     num_rows="dynamic", 
@@ -71,7 +98,6 @@ edited_df = st.data_editor(
     key="editor_key"
 )
 
-# Kunci data terbaru ke session state "edited_df" (Bukan df_lampiran agar tabel tidak kehilangan fokus)
 st.session_state.edited_df = edited_df
 
 # --- STATE UNTUK DOKUMEN ---
@@ -82,7 +108,7 @@ if "doc_data" not in st.session_state:
 if "doc_name" not in st.session_state:
     st.session_state.doc_name = ""
 
-# --- FUNGSI CUSTOM FONT & XML ---
+# --- FUNGSI CUSTOM FONT, XML & COPY BORDER ---
 def apply_bookman_font(run, size=11):
     run.font.name = 'Bookman Old Style'
     run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Bookman Old Style')
@@ -105,6 +131,21 @@ def set_repeat_table_header(row):
     tblHeader = OxmlElement('w:tblHeader')
     tblHeader.set(qn('w:val'), "true")
     trPr.append(tblHeader)
+
+# --- FIX: UPDATE FUNGSI COPY STYLE ---
+def copy_cell_style(source_cell, target_cell):
+    """Fungsi ajaib untuk menyalin garis (border) dari satu sel ke sel lainnya dengan aman"""
+    source_tcPr = source_cell._tc.get_or_add_tcPr()
+    target_tcPr = target_cell._tc.get_or_add_tcPr()
+    
+    # Hapus element lama di sel target menggunakan cara iterasi list yang lebih aman
+    for child in list(target_tcPr):
+        target_tcPr.remove(child)
+        
+    # Salin element dari sel sumber (termasuk border)
+    for child in source_tcPr:
+        target_tcPr.append(copy.deepcopy(child))
+# -------------------------------------
 
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
@@ -166,6 +207,42 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         for i in range(template_row_idx):
                             set_repeat_table_header(target_table.rows[i])
 
+                        # --- LOGIKA GARIS & HEADER KOLOM BARU ---
+                        current_table_cols = len(target_table.columns)
+                        needed_cols = len(edited_df.columns) + 1 # +1 untuk indeks Nomor (No.)
+
+                        # 1. Tambah Kolom & Copy Garis (Border)
+                        if needed_cols > current_table_cols:
+                            cols_to_add = needed_cols - current_table_cols
+                            for _ in range(cols_to_add):
+                                target_table.add_column(Cm(2.5)) 
+                            
+                            # Salin style (border) dari kolom terakhir ke kolom-kolom baru
+                            for row in target_table.rows:
+                                for new_col_idx in range(current_table_cols, len(row.cells)):
+                                    source_cell = row.cells[current_table_cols - 1] # Sel referensi
+                                    target_cell = row.cells[new_col_idx] # Sel baru
+                                    copy_cell_style(source_cell, target_cell)
+                            
+                        # 2. Tulis Ulang Header secara Eksplisit (Bukan menebak baris di atas {nama})
+                        if len(target_table.rows) > 0:
+                            # Tulis teks nama kolom di Baris Paling Atas (Baris index 0)
+                            header_text_row = target_table.rows[0]
+                            for col_idx, col_name in enumerate(edited_df.columns):
+                                cell_idx = col_idx + 1
+                                if cell_idx < len(header_text_row.cells):
+                                    set_cell_text_with_font(header_text_row.cells[cell_idx], col_name, keep_next=True)
+                                    
+                        if len(target_table.rows) > 1:
+                            # Jika ada Baris index 1, dan itu berisi "(1)" dsb, beri penomoran kolom "(6)"
+                            header_num_row = target_table.rows[1]
+                            if len(header_num_row.cells) > 1 and "(" in header_num_row.cells[1].text and ")" in header_num_row.cells[1].text:
+                                for col_idx in range(current_table_cols - 1, needed_cols - 1): # Hanya untuk kolom tambahan
+                                    cell_idx = col_idx + 1
+                                    if cell_idx < len(header_num_row.cells):
+                                        set_cell_text_with_font(header_num_row.cells[cell_idx], f"({cell_idx + 1})", keep_next=True)
+                        # ----------------------------------------------
+
                         current_tr = target_table.rows[template_row_idx]._tr
                         total_data = len(edited_df)
                         
@@ -192,11 +269,14 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                                 target_row = new_row
                             
                             is_last_row = (index == total_data - 1)
+                            
                             set_cell_text_with_font(target_row.cells[0], f"{index + 1}.", keep_next=is_last_row)
-                            set_cell_text_with_font(target_row.cells[1], str(row_data["Nama/Jabatan"]), keep_next=is_last_row)
-                            set_cell_text_with_font(target_row.cells[2], str(row_data["NIP/Golongan"]), keep_next=is_last_row)
-                            set_cell_text_with_font(target_row.cells[3], str(row_data["Posisi"]), keep_next=is_last_row)
-                            set_cell_text_with_font(target_row.cells[4], f"Rp{row_data['Honor']}", keep_next=is_last_row)
+                            
+                            for col_idx, col_name in enumerate(edited_df.columns):
+                                val = str(row_data[col_name])
+                                if ("honor" in col_name.lower() or "uang" in col_name.lower() or "tarif" in col_name.lower()) and val and not val.lower().startswith("rp"):
+                                    val = f"Rp{val}"
+                                set_cell_text_with_font(target_row.cells[col_idx + 1], val, keep_next=is_last_row)
 
                         final_spacer_row = target_table.add_row()
                         for cell in final_spacer_row.cells:
@@ -234,4 +314,3 @@ st.write("")
 st.write("")
 
 st.write("                       Copyright @BPS Kota Solok")
-
