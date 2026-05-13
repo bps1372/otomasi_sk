@@ -43,12 +43,12 @@ if "df_lampiran" not in st.session_state:
         "Honor": ["50.000"]
     })
 
-# State untuk menyimpan data hasil editan agar tidak me-refresh tabel terus-menerus
+# State untuk menyimpan data hasil editan
 if "edited_df" not in st.session_state:
     st.session_state.edited_df = st.session_state.df_lampiran
 
-# --- UPDATE DISINI: PANEL PENGATURAN BARIS & KOLOM ---
-st.markdown("##### Pengaturan Baris & Kolom Tambahan")
+# --- UPDATE: PANEL PENGATURAN BARIS & KOLOM ---
+st.markdown("##### Pengaturan Baris & Kolom")
 col_n1, col_n2 = st.columns(2)
 
 # Kolom Kiri: Tambah Baris
@@ -61,16 +61,17 @@ with col_n1:
         st.session_state.df_lampiran = pd.concat([st.session_state.edited_df, new_data], ignore_index=True)
         st.rerun()
 
-# Kolom Kanan: Tambah & Edit Kolom Baru (Maks 4)
+# Kolom Kanan: Tambah & Edit SEMUA Kolom (Maks +4 Kolom Baru)
 with col_n2:
     st.markdown("**2. Pengaturan Kolom (Maks. Tambah 4)**")
-    base_cols = ["Nama/Jabatan", "NIP/Golongan", "Posisi", "Honor"]
     current_cols = list(st.session_state.edited_df.columns)
-    custom_cols = [c for c in current_cols if c not in base_cols]
+    
+    # Deteksi jumlah kolom tambahan (Asumsi awal ada 4 kolom)
+    jumlah_kolom_tambahan = len(current_cols) - 4
     
     # Fitur Tambah Kolom
-    if len(custom_cols) < 4:
-        kolom_baru = st.text_input("Nama Kolom Baru (Cth: Keterangan):", key="input_tambah_kolom")
+    if jumlah_kolom_tambahan < 4:
+        kolom_baru = st.text_input("Nama Kolom Baru:", key="input_tambah_kolom")
         if st.button("➕ Tambah Kolom"):
             if kolom_baru and kolom_baru not in current_cols:
                 st.session_state.edited_df[kolom_baru] = ""
@@ -79,16 +80,16 @@ with col_n2:
     else:
         st.info("Batas maksimal 4 kolom tambahan telah tercapai.")
 
-    # Fitur Edit Nama Kolom di Streamlit
-    if len(custom_cols) > 0:
-        st.markdown("---")
-        kolom_lama = st.selectbox("Pilih kolom untuk diubah namanya:", custom_cols)
-        nama_baru = st.text_input("Ubah nama menjadi:", key="input_ubah_kolom")
-        if st.button("📝 Simpan Nama Baru"):
-            if nama_baru and nama_baru not in current_cols:
-                st.session_state.edited_df = st.session_state.edited_df.rename(columns={kolom_lama: nama_baru})
-                st.session_state.df_lampiran = st.session_state.edited_df
-                st.rerun()
+    # Fitur Edit Nama Kolom di Streamlit (Bisa Pilih Semua Kolom)
+    st.markdown("---")
+    kolom_lama = st.selectbox("Pilih kolom untuk diubah namanya:", current_cols)
+    nama_baru = st.text_input("Ubah nama menjadi:", key="input_ubah_kolom")
+    if st.button("📝 Simpan Nama Baru"):
+        if nama_baru and nama_baru not in current_cols:
+            # Rename kolom pada dataframe
+            st.session_state.edited_df = st.session_state.edited_df.rename(columns={kolom_lama: nama_baru})
+            st.session_state.df_lampiran = st.session_state.edited_df
+            st.rerun()
 # -----------------------------------------------------
 
 # Editor Tabel dengan num_rows="dynamic"
@@ -195,22 +196,23 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         for i in range(template_row_idx):
                             set_repeat_table_header(target_table.rows[i])
 
-                        # --- UPDATE: MENYESUAIKAN JUMLAH KOLOM DOCX ---
+                        # --- UPDATE: MENYESUAIKAN JUMLAH & NAMA KOLOM DOCX ---
                         current_table_cols = len(target_table.columns)
                         needed_cols = len(edited_df.columns) + 1 # +1 untuk indeks Nomor (No.)
 
-                        # Jika kolom dataframe lebih banyak dari tabel docx template (kolom baru ditambahkan)
+                        # Tambahkan kolom di docx jika kolom dataframe lebih banyak
                         if needed_cols > current_table_cols:
                             for _ in range(needed_cols - current_table_cols):
                                 target_table.add_column(Cm(2.5)) 
                             
-                            # Tulis nama kolom baru ke Header tabel (Supaya di docx nama kolomnya sesuai dan bisa diedit manual)
-                            if template_row_idx > 0:
-                                header_row = target_table.rows[template_row_idx - 1]
-                                for col_idx, col_name in enumerate(edited_df.columns):
-                                    cell_idx = col_idx + 1
-                                    if cell_idx >= current_table_cols:
-                                        set_cell_text_with_font(header_row.cells[cell_idx], col_name, keep_next=True)
+                        # Tulis Ulang SEMUA Nama Kolom ke Header tabel Docx
+                        # Supaya jika kolom bawaan di-rename, perubahannya teraplikasi di Word
+                        if template_row_idx > 0:
+                            header_row = target_table.rows[template_row_idx - 1]
+                            for col_idx, col_name in enumerate(edited_df.columns):
+                                cell_idx = col_idx + 1 # Dimulai dari 1 karena cell 0 adalah "No."
+                                if cell_idx < len(header_row.cells):
+                                    set_cell_text_with_font(header_row.cells[cell_idx], col_name, keep_next=True)
                         # ----------------------------------------------
 
                         current_tr = target_table.rows[template_row_idx]._tr
@@ -245,7 +247,8 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             
                             for col_idx, col_name in enumerate(edited_df.columns):
                                 val = str(row_data[col_name])
-                                if col_name == "Honor" and val and not val.lower().startswith("rp"):
+                                # Tetap beri penanda 'Rp' jika kolomnya bernama 'Honor' atau sudah diubah yang mengandung kata terkait
+                                if ("honor" in col_name.lower() or "uang" in col_name.lower() or "tarif" in col_name.lower()) and val and not val.lower().startswith("rp"):
                                     val = f"Rp{val}"
                                 set_cell_text_with_font(target_row.cells[col_idx + 1], val, keep_next=is_last_row)
                             # ---------------------------------------
@@ -285,4 +288,4 @@ st.write("")
 st.write("")
 st.write("")
 
-st.write("                       Copyright @BPS Kota Solok") 
+st.write("                       Copyright @BPS Kota Solok")
