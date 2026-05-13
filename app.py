@@ -1,10 +1,10 @@
-# Update 13 Mei 2026 13.03
-
+# 13 Mei 13.35
 
 import streamlit as st
 import pandas as pd
 from docx import Document
 from docx.shared import Pt, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH # Tambahan untuk rata tengah
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import io
@@ -108,22 +108,38 @@ if "doc_data" not in st.session_state:
 if "doc_name" not in st.session_state:
     st.session_state.doc_name = ""
 
-# --- FUNGSI CUSTOM FONT, XML & COPY BORDER ---
-def apply_bookman_font(run, size=11):
+# --- FUNGSI CUSTOM FONT, XML, BORDER & ALIGNMENT ---
+def apply_bookman_font(run, size=11, bold=False):
     run.font.name = 'Bookman Old Style'
     run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Bookman Old Style')
     run.font.size = Pt(size)
+    if bold:
+        run.bold = True
 
-def set_cell_text_with_font(cell, text, keep_next=False):
+def set_cell_text_with_font(cell, text, keep_next=False, bold=False, center=False):
     cell.text = text
+    
+    # Pengaturan perataan vertikal (tengah atas-bawah)
+    if center:
+        tcPr = cell._tc.get_or_add_tcPr()
+        vAlign = OxmlElement('w:vAlign')
+        vAlign.set(qn('w:val'), "center")
+        tcPr.append(vAlign)
+
     for p in cell.paragraphs:
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(0)
         p.paragraph_format.line_spacing = 1.5
+        
+        # Pengaturan perataan horizontal (tengah kiri-kanan)
+        if center:
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
         if keep_next:
             p.paragraph_format.keep_with_next = True
+            
         for run in p.runs:
-            apply_bookman_font(run, size=12)
+            apply_bookman_font(run, size=12, bold=bold)
 
 def set_repeat_table_header(row):
     tr = row._tr
@@ -132,17 +148,14 @@ def set_repeat_table_header(row):
     tblHeader.set(qn('w:val'), "true")
     trPr.append(tblHeader)
 
-# --- FIX: UPDATE FUNGSI COPY STYLE ---
 def copy_cell_style(source_cell, target_cell):
     """Fungsi ajaib untuk menyalin garis (border) dari satu sel ke sel lainnya dengan aman"""
     source_tcPr = source_cell._tc.get_or_add_tcPr()
     target_tcPr = target_cell._tc.get_or_add_tcPr()
     
-    # Hapus element lama di sel target menggunakan cara iterasi list yang lebih aman
     for child in list(target_tcPr):
         target_tcPr.remove(child)
         
-    # Salin element dari sel sumber (termasuk border)
     for child in source_tcPr:
         target_tcPr.append(copy.deepcopy(child))
 # -------------------------------------
@@ -207,7 +220,6 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         for i in range(template_row_idx):
                             set_repeat_table_header(target_table.rows[i])
 
-                        # --- LOGIKA GARIS & HEADER KOLOM BARU ---
                         current_table_cols = len(target_table.columns)
                         needed_cols = len(edited_df.columns) + 1 # +1 untuk indeks Nomor (No.)
 
@@ -217,30 +229,29 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             for _ in range(cols_to_add):
                                 target_table.add_column(Cm(2.5)) 
                             
-                            # Salin style (border) dari kolom terakhir ke kolom-kolom baru
                             for row in target_table.rows:
                                 for new_col_idx in range(current_table_cols, len(row.cells)):
-                                    source_cell = row.cells[current_table_cols - 1] # Sel referensi
-                                    target_cell = row.cells[new_col_idx] # Sel baru
+                                    source_cell = row.cells[current_table_cols - 1]
+                                    target_cell = row.cells[new_col_idx]
                                     copy_cell_style(source_cell, target_cell)
                             
-                        # 2. Tulis Ulang Header secara Eksplisit (Bukan menebak baris di atas {nama})
+                        # 2. Tulis Ulang Header (DENGAN BOLD & RATA TENGAH)
                         if len(target_table.rows) > 0:
-                            # Tulis teks nama kolom di Baris Paling Atas (Baris index 0)
                             header_text_row = target_table.rows[0]
                             for col_idx, col_name in enumerate(edited_df.columns):
                                 cell_idx = col_idx + 1
                                 if cell_idx < len(header_text_row.cells):
-                                    set_cell_text_with_font(header_text_row.cells[cell_idx], col_name, keep_next=True)
+                                    # Tambahan bold=True dan center=True khusus Header
+                                    set_cell_text_with_font(header_text_row.cells[cell_idx], col_name, keep_next=True, bold=True, center=True)
                                     
                         if len(target_table.rows) > 1:
-                            # Jika ada Baris index 1, dan itu berisi "(1)" dsb, beri penomoran kolom "(6)"
                             header_num_row = target_table.rows[1]
                             if len(header_num_row.cells) > 1 and "(" in header_num_row.cells[1].text and ")" in header_num_row.cells[1].text:
-                                for col_idx in range(current_table_cols - 1, needed_cols - 1): # Hanya untuk kolom tambahan
+                                for col_idx in range(current_table_cols - 1, needed_cols - 1):
                                     cell_idx = col_idx + 1
                                     if cell_idx < len(header_num_row.cells):
-                                        set_cell_text_with_font(header_num_row.cells[cell_idx], f"({cell_idx + 1})", keep_next=True)
+                                        # Penomoran baris header juga dibuat rata tengah
+                                        set_cell_text_with_font(header_num_row.cells[cell_idx], f"({cell_idx + 1})", keep_next=True, center=True)
                         # ----------------------------------------------
 
                         current_tr = target_table.rows[template_row_idx]._tr
@@ -270,6 +281,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             
                             is_last_row = (index == total_data - 1)
                             
+                            # Baris Data Tetap Normal (Tanpa Bold / Rata Tengah, kecuali jika diinginkan)
                             set_cell_text_with_font(target_row.cells[0], f"{index + 1}.", keep_next=is_last_row)
                             
                             for col_idx, col_name in enumerate(edited_df.columns):
