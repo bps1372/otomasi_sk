@@ -37,8 +37,8 @@ st.subheader("F. Lampiran")
 # Inisialisasi Session State
 if "df_lampiran" not in st.session_state:
     st.session_state.df_lampiran = pd.DataFrame({
-        "Nama/Jabatan": ["si ABCDEFGHIJXCVBNN Statistisi Ahli Muda"],
-        "NIP/Golongan": ["199102192019031001 Gol: III/b"],
+        "Nama/Jabatan": ["Bapak WXYZABCDEFGHI Statistisi Ahli Muda"],
+        "NIP/Golongan": ["200202192019031001 Gol: III/b"],
         "Posisi": ["PML"],
         "Honor": ["50.000"]
     })
