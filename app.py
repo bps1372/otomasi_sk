@@ -15,4 +15,5 @@ st.set_page_config(page_title="GESIT - BPS1372", layout="centered")
 
 st.title("📝 GESIT (Generate SK Instan)")
 st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok.")
-st.write("Website beralih kesini: https://gesit-bps1372.streamlit.app/ (sementara dalam proses perbaikan maintenance)")
+st.write("Website beralih kesini: https://gesit-bps1372.streamlit.app/ ")
+st.write("(sementara dalam proses perbaikan maintenance)")
