@@ -1,5 +1,6 @@
 # Update 13 Mei 2026 13.03
 
+
 import streamlit as st
 import pandas as pd
 from docx import Document
@@ -8,7 +9,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import io
 import requests
-import copy # Modul baru ditambahkan untuk menyalin style garis (border)
+import copy
 
 st.set_page_config(page_title="GESIT - BPS1372", layout="centered")
 
@@ -131,14 +132,20 @@ def set_repeat_table_header(row):
     tblHeader.set(qn('w:val'), "true")
     trPr.append(tblHeader)
 
+# --- FIX: UPDATE FUNGSI COPY STYLE ---
 def copy_cell_style(source_cell, target_cell):
-    """Fungsi ajaib untuk menyalin garis (border) dari satu sel ke sel lainnya"""
-    source_tcPr = source_cell._tc.tcPr
-    if source_tcPr is not None:
-        target_tcPr = target_cell._tc.get_or_add_tcPr()
-        target_tcPr.clear_content()
-        for child in source_tcPr:
-            target_tcPr.append(copy.deepcopy(child))
+    """Fungsi ajaib untuk menyalin garis (border) dari satu sel ke sel lainnya dengan aman"""
+    source_tcPr = source_cell._tc.get_or_add_tcPr()
+    target_tcPr = target_cell._tc.get_or_add_tcPr()
+    
+    # Hapus element lama di sel target menggunakan cara iterasi list yang lebih aman
+    for child in list(target_tcPr):
+        target_tcPr.remove(child)
+        
+    # Salin element dari sel sumber (termasuk border)
+    for child in source_tcPr:
+        target_tcPr.append(copy.deepcopy(child))
+# -------------------------------------
 
 # 3. Tombol Eksekusi
 if st.button("Proses & Buat Dokumen", type="primary"):
@@ -200,7 +207,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         for i in range(template_row_idx):
                             set_repeat_table_header(target_table.rows[i])
 
-                        # --- FIX: GARIS & HEADER KOLOM BARU ---
+                        # --- LOGIKA GARIS & HEADER KOLOM BARU ---
                         current_table_cols = len(target_table.columns)
                         needed_cols = len(edited_df.columns) + 1 # +1 untuk indeks Nomor (No.)
 
