@@ -1,4 +1,4 @@
-#13 Mei 13.35
+# 13 Mei 2026 13.44 Updated
 
 import streamlit as st
 import pandas as pd
@@ -48,7 +48,7 @@ if "df_lampiran" not in st.session_state:
 if "edited_df" not in st.session_state:
     st.session_state.edited_df = st.session_state.df_lampiran
 
-# State khusus untuk Nama Kolom "No."
+# State khusus untuk Nama Kolom urut (pertama)
 if "nama_kolom_no" not in st.session_state:
     st.session_state.nama_kolom_no = "No."
 
@@ -85,16 +85,20 @@ with col_n2:
 
     st.markdown("---")
     
-    # Input khusus untuk mengubah nama kolom pertama (No.)
-    st.session_state.nama_kolom_no = st.text_input("Ubah nama kolom 'No.':", value=st.session_state.nama_kolom_no)
-    
-    # Input untuk mengubah nama kolom-kolom tabel lainnya
-    kolom_lama = st.selectbox("Pilih kolom tabel untuk diubah namanya:", current_cols)
+    # Gabungkan kolom urut (No) dengan kolom DataFrame ke dalam opsi dropdown
+    pilihan_kolom = [st.session_state.nama_kolom_no] + current_cols
+    kolom_lama = st.selectbox("Pilih kolom tabel untuk diubah namanya:", pilihan_kolom)
     nama_baru = st.text_input("Ubah nama menjadi:", key="input_ubah_kolom")
-    if st.button("📝 Simpan Nama Baru Tabel"):
-        if nama_baru and nama_baru not in current_cols:
-            st.session_state.edited_df = st.session_state.edited_df.rename(columns={kolom_lama: nama_baru})
-            st.session_state.df_lampiran = st.session_state.edited_df
+    
+    if st.button("📝 Simpan Nama Baru"):
+        if nama_baru and nama_baru not in pilihan_kolom:
+            # Jika yang dipilih adalah kolom urut (pertama)
+            if kolom_lama == st.session_state.nama_kolom_no:
+                st.session_state.nama_kolom_no = nama_baru
+            # Jika yang dipilih adalah kolom data lainnya
+            else:
+                st.session_state.edited_df = st.session_state.edited_df.rename(columns={kolom_lama: nama_baru})
+                st.session_state.df_lampiran = st.session_state.edited_df
             st.rerun()
 # -----------------------------------------------------
 
