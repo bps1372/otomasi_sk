@@ -2,21 +2,7 @@
 
 Generate otomatis SK Keputusan Kuasa Pengguna Anggaran Instan (GESIT)
 
-https://auto-sura1372.streamlit.app/
-
-update belom
-
-Update Autosura
-
-* isi tahun anggaran ..... (drop 20226/2027/2028)
-* Nomor dipa (KETIGA;....)
-* tambah kolom + keterangan nama kolom bisa edit ubah nama kolom
-* tambah baris otomatis, misal ingin nambahin 15 baris, tulis 15 baris, lalu tambah baris otomatis
-* update template jika berubah tiap tahun..........
+https://1372gesit.streamlit.app/ (Update 15 Juni 2026
 
 
-+fitur excel csv:
-upload csv/excel nambahin otomatis lampiran
-
-
-+ nanti juag aday yang perjalanan dinas, nanti inputa lampiran foto otomatis bikin suratnya......
+Untuk edit dan modifikasi, difolder code, untuk deploy gunakan streamlit
