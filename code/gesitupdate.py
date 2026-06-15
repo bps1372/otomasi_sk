@@ -30,7 +30,7 @@ with col1:
 with col2:
     tentang = st.text_input("D. Judul [tulis dengan huruf besar]", placeholder="Contoh: PETUGAS SENSUS EKONOMI 2026")
     pelaksanaan = st.text_input("E. Pelaksanaan Kegiatan", placeholder="Contoh: Sensus Ekonomi 2026")
-    kepalabps = st.text_input("G. Nama Kepala BPS", placeholder="Contoh: Alber Analafean S.Si.D.")
+    kepalabps = st.text_input("G. Nama Kepala BPS", placeholder="Contoh: Alfianto, S.Kom, M.Kom")
 
 mengingat = st.text_area("H. Poin Mengingat (Tambahan Peraturan)", placeholder="Contoh: Peraturan Menteri Keuangan Nomor...")
 
@@ -41,10 +41,10 @@ st.subheader("I. Lampiran")
 # Inisialisasi Session State
 if "df_lampiran" not in st.session_state:
     st.session_state.df_lampiran = pd.DataFrame({
-        "Nama/Jabatan": ["Bapak WXYZABCDEFGHI Statistisi Ahli Muda"],
+        "Nama/Jabatan": ["Alber Analafean Statistisi Ahli Muda"],
         "NIP/Golongan": ["200202192019031001 Gol: III/b"],
         "Posisi": ["PML"],
-        "Honor": ["50.000"]
+        "Honor": ["75.000"]
     })
 
 if "edited_df" not in st.session_state:
