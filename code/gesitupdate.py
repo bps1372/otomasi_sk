@@ -1,9 +1,8 @@
-# tulis disini
 import streamlit as st
 import pandas as pd
 from docx import Document
 from docx.shared import Pt, Cm
-from docx.enum.text import WD_ALIGN_PARAGRAPH # Tambahan untuk rata tengah
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import io
@@ -16,7 +15,6 @@ st.title("📝 GESIT (Generate SK Instan)")
 st.write("Aplikasi ini akan mengotomasi pengisian dokumen SK Kuasa Pengguna Anggaran BPS Kota Solok.")
 
 # --- KONFIGURASI GITHUB ---
-# URL sudah diupdate ke template baru
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/bps1372/otomasi_sk/main/code/barutemplat.docx"
 
 # 1. Input Data Umum
@@ -27,16 +25,13 @@ with col1:
     nomor = st.text_input("A. Nomor Dokumen", placeholder="Contoh: 042.1 TAHUN 2026")
     tanggal = st.text_input("B. Tanggal Ditetapkan", placeholder="Contoh: 15 Januari 2026")
     petugas = st.text_input("C. Menetapkan...", placeholder="Contoh: Petugas Sensus Ekonomi 2026")
-    # Tambahan Input: Nomor DIPA
     nomordipa = st.text_input("F. Nomor DIPA", placeholder="Contoh: SP DIPA-054.01.2.XXXXXX/2026")
 
 with col2:
     tentang = st.text_input("D. Judul [tulis dengan huruf besar]", placeholder="Contoh: PETUGAS SENSUS EKONOMI 2026")
     pelaksanaan = st.text_input("E. Pelaksanaan Kegiatan", placeholder="Contoh: Sensus Ekonomi 2026")
-    # Tambahan Input: Kepala BPS
     kepalabps = st.text_input("G. Nama Kepala BPS", placeholder="Contoh: Mukhlis, S.E.")
 
-# Tambahan Input: Mengingat (Menggunakan text_area karena biasanya poin peraturan lebih panjang)
 mengingat = st.text_area("H. Poin Mengingat (Tambahan Peraturan)", placeholder="Contoh: Peraturan Menteri Keuangan Nomor...")
 
 
@@ -52,11 +47,9 @@ if "df_lampiran" not in st.session_state:
         "Honor": ["50.000"]
     })
 
-# State untuk menyimpan data hasil editan
 if "edited_df" not in st.session_state:
     st.session_state.edited_df = st.session_state.df_lampiran
 
-# State khusus untuk Nama Kolom urut (pertama)
 if "nama_kolom_no" not in st.session_state:
     st.session_state.nama_kolom_no = "No."
 
@@ -64,7 +57,6 @@ if "nama_kolom_no" not in st.session_state:
 st.markdown("##### Pengaturan Baris & Kolom")
 col_n1, col_n2 = st.columns(2)
 
-# Kolom Kiri: Tambah Baris
 with col_n1:
     st.markdown("**1. Tambah Baris Kosong**")
     baris_baru = st.number_input("Jumlah baris kosong:", min_value=1, max_value=500, value=1)
@@ -74,7 +66,6 @@ with col_n1:
         st.session_state.df_lampiran = pd.concat([st.session_state.edited_df, new_data], ignore_index=True)
         st.rerun()
 
-# Kolom Kanan: Tambah & Edit SEMUA Kolom (Maks +4 Kolom Baru)
 with col_n2:
     st.markdown("**2. Pengaturan Kolom (Maks. Tambah 4)**")
     current_cols = list(st.session_state.edited_df.columns)
@@ -93,17 +84,14 @@ with col_n2:
 
     st.markdown("---")
     
-    # Gabungkan kolom urut (No) dengan kolom DataFrame ke dalam opsi dropdown
     pilihan_kolom = [st.session_state.nama_kolom_no] + current_cols
     kolom_lama = st.selectbox("Pilih kolom tabel untuk diubah namanya:", pilihan_kolom)
     nama_baru = st.text_input("Ubah nama menjadi:", key="input_ubah_kolom")
     
     if st.button("📝 Simpan Nama Baru"):
         if nama_baru and nama_baru not in pilihan_kolom:
-            # Jika yang dipilih adalah kolom urut (pertama)
             if kolom_lama == st.session_state.nama_kolom_no:
                 st.session_state.nama_kolom_no = nama_baru
-            # Jika yang dipilih adalah kolom data lainnya
             else:
                 st.session_state.edited_df = st.session_state.edited_df.rename(columns={kolom_lama: nama_baru})
                 st.session_state.df_lampiran = st.session_state.edited_df
@@ -140,7 +128,6 @@ def apply_bookman_font(run, size=11, bold=False):
 def set_cell_text_with_font(cell, text, keep_next=False, bold=False, center=False):
     cell.text = text
     
-    # Pengaturan perataan vertikal (tengah atas-bawah)
     if center:
         tcPr = cell._tc.get_or_add_tcPr()
         vAlign = OxmlElement('w:vAlign')
@@ -152,7 +139,6 @@ def set_cell_text_with_font(cell, text, keep_next=False, bold=False, center=Fals
         p.paragraph_format.space_after = Pt(0)
         p.paragraph_format.line_spacing = 1.5
         
-        # Pengaturan perataan horizontal (tengah kiri-kanan)
         if center:
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             
@@ -170,7 +156,6 @@ def set_repeat_table_header(row):
     trPr.append(tblHeader)
 
 def copy_cell_style(source_cell, target_cell):
-    """Fungsi ajaib untuk menyalin garis (border) dari satu sel ke sel lainnya dengan aman"""
     source_tcPr = source_cell._tc.get_or_add_tcPr()
     target_tcPr = target_cell._tc.get_or_add_tcPr()
     
@@ -196,7 +181,6 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                     template_file = io.BytesIO(response.content)
                     doc = Document(template_file)
                     
-                    # Update kamus replacements untuk menampung variabel baru
                     replacements = {
                         "{tentang}": tentang,
                         "{pelaksanaan}": pelaksanaan,
@@ -213,14 +197,23 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                         for p in paragraphs:
                             original_text = p.text
                             changed = False
+                            
+                            # Deteksi apakah baris ini adalah tempat tanda tangan Kepala BPS
+                            is_kepala = "{kepalabps}" in original_text
+
                             for key, value in replacements.items():
                                 if key in original_text:
                                     original_text = original_text.replace(key, value)
                                     changed = True
+                                    
                             if changed:
                                 p.text = original_text
                                 for run in p.runs:
-                                    apply_bookman_font(run, size=12)
+                                    # Terapkan bold secara otomatis jika itu nama Kepala BPS
+                                    if is_kepala:
+                                        apply_bookman_font(run, size=12, bold=True)
+                                    else:
+                                        apply_bookman_font(run, size=12)
 
                     replace_text_in_paragraphs(doc.paragraphs)
                     for table in doc.tables:
@@ -246,7 +239,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             set_repeat_table_header(target_table.rows[i])
 
                         current_table_cols = len(target_table.columns)
-                        needed_cols = len(edited_df.columns) + 1 # +1 untuk indeks Nomor (No.)
+                        needed_cols = len(edited_df.columns) + 1 
 
                         # 1. Tambah Kolom & Copy Garis (Border)
                         if needed_cols > current_table_cols:
@@ -260,18 +253,16 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                                     target_cell = row.cells[new_col_idx]
                                     copy_cell_style(source_cell, target_cell)
                             
-                        # 2. Tulis Ulang Header (DENGAN BOLD & RATA TENGAH)
+                        # 2. Tulis Ulang Header
                         if len(target_table.rows) > 0:
                             header_text_row = target_table.rows[0]
                             
-                            # UPDATE KHUSUS UNTUK KOLOM NO:
                             if len(header_text_row.cells) > 0:
                                 set_cell_text_with_font(header_text_row.cells[0], st.session_state.nama_kolom_no, keep_next=True, bold=True, center=True)
                             
                             for col_idx, col_name in enumerate(edited_df.columns):
                                 cell_idx = col_idx + 1
                                 if cell_idx < len(header_text_row.cells):
-                                    # Tambahan bold=True dan center=True khusus Header
                                     set_cell_text_with_font(header_text_row.cells[cell_idx], col_name, keep_next=True, bold=True, center=True)
                                     
                         if len(target_table.rows) > 1:
@@ -280,9 +271,7 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                                 for col_idx in range(current_table_cols - 1, needed_cols - 1):
                                     cell_idx = col_idx + 1
                                     if cell_idx < len(header_num_row.cells):
-                                        # Penomoran baris header juga dibuat rata tengah
                                         set_cell_text_with_font(header_num_row.cells[cell_idx], f"({cell_idx + 1})", keep_next=True, center=True)
-                        # ----------------------------------------------
 
                         current_tr = target_table.rows[template_row_idx]._tr
                         total_data = len(edited_df)
@@ -311,7 +300,6 @@ if st.button("Proses & Buat Dokumen", type="primary"):
                             
                             is_last_row = (index == total_data - 1)
                             
-                            # Baris Data Tetap Normal (Tanpa Bold / Rata Tengah, kecuali jika diinginkan)
                             set_cell_text_with_font(target_row.cells[0], f"{index + 1}.", keep_next=is_last_row)
                             
                             for col_idx, col_name in enumerate(edited_df.columns):
