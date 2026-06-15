@@ -30,7 +30,7 @@ with col1:
 with col2:
     tentang = st.text_input("D. Judul [tulis dengan huruf besar]", placeholder="Contoh: PETUGAS SENSUS EKONOMI 2026")
     pelaksanaan = st.text_input("E. Pelaksanaan Kegiatan", placeholder="Contoh: Sensus Ekonomi 2026")
-    kepalabps = st.text_input("G. Nama Kepala BPS", placeholder="Contoh: Mukhlis, S.E.")
+    kepalabps = st.text_input("G. Nama Kepala BPS", placeholder="Contoh: Alber Analafean S.Si.D.")
 
 mengingat = st.text_area("H. Poin Mengingat (Tambahan Peraturan)", placeholder="Contoh: Peraturan Menteri Keuangan Nomor...")
 
